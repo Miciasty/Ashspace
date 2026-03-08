@@ -95,16 +95,7 @@ Maven:
 </dependency>
 ```
 
-Minimal runnable example:
-
-```xml
-<!-- Optional explicit pin if you want to control versions directly -->
-<dependency>
-  <groupId>dev.nasaka.blackframe</groupId>
-  <artifactId>ashgrid</artifactId>
-  <version>1.2.0</version>
-</dependency>
-```
+Minimal usage example:
 
 ```java
 import nsk.nu.ashcore.api.math.Vector3;
