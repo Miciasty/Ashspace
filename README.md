@@ -2,6 +2,10 @@
 
 Low-level deterministic Java library for coordinate frames, rigid transforms, and world/local-to-grid conversions.
 
+> [!NOTE]
+> Ashspace handles coordinate frames, rigid transforms, and world/local conversion rules.  
+> Voxel storage/traversal belongs to Ashgrid, and pathfinding belongs to Ashnav.
+
 ## 1. Purpose
 
 Ashspace gives you a stable way to define coordinate frames and convert data between them without hidden state or engine lock-in.
@@ -45,7 +49,8 @@ Ashspace keeps those conversions deterministic and consistent for the same input
 4. `GridSpaceMapper3` converts world/local points and AABBs to Ashgrid cell/chunk/chunk-local indices using explicit `cellSize`, `worldOrigin`, and `ChunkScheme`.
 5. All conversions are deterministic and allocation-light value operations.
 
-Note: local rotated AABBs are converted through world-space enclosing AABBs, so range results are conservative.
+> [!NOTE]
+> Local rotated AABBs are converted through world-space enclosing AABBs, so range results are conservative.
 `FrameGraph3` is mutable and not thread-safe.
 
 ## 6. Big-O for operations
@@ -132,7 +137,8 @@ public final class AshspaceQuickStart {
 }
 ```
 
-`SquareXZChunkScheme` is currently provided by Ashgrid under `implementation` and is the standard chunk scheme for XZ chunk layouts.
+> [!NOTE]
+> `SquareXZChunkScheme` is currently provided by Ashgrid under `implementation` and is the standard chunk scheme for XZ chunk layouts.
 
 ## License
 
