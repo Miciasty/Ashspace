@@ -12,6 +12,9 @@ import nsk.nu.ashspace.api.transform.RigidTransform3;
 
 /**
  * Frame-aware conversion utilities for points, vectors, and geometry.
+ * <p>Retains the supplied mutable graph, without copying or locking it. The caller
+ * must keep graph state stable throughout every complete query, including conversions
+ * in other adapters. Each returned transform or geometry value is a snapshot.</p>
  */
 public final class SpaceConverter3 {
     private final FrameGraph3 frames;
@@ -124,7 +127,8 @@ public final class SpaceConverter3 {
     }
 
     /**
-     * Convert AABB from source frame to target frame.
+     * Convert AABB to a conservative enclosing AABB in the target frame.
+     * After rotation this can include space outside the transformed shape.
      */
     public AxisAlignedBox axisAlignedBox(AxisAlignedBox box, FrameId source, FrameId target) {
         if (box == null) throw new NullPointerException("box");

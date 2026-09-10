@@ -11,7 +11,12 @@ import java.util.Optional;
  * Mutable frame graph for deterministic conversion between coordinate frames.
  *
  * <p>Each non-root frame stores a transform to its parent. The graph must remain acyclic.</p>
- * <p>This class is not thread-safe.</p>
+ * <p>This class is not thread-safe. The caller must keep the graph unchanged during
+ * a complete multi-step query, including all conversions and geometry queries that
+ * need the same frame state. External synchronization must include writers.</p>
+ * <p>Returned definitions and transforms are immutable snapshots. A converter retains
+ * this live graph; later conversions observe later definitions. Floating-point
+ * accumulation loses precision as translation magnitudes and chain depth grow.</p>
  */
 public final class FrameGraph3 {
 
@@ -79,7 +84,8 @@ public final class FrameGraph3 {
     }
 
     /**
-     * Immutable snapshot of all frame definitions.
+     * Immutable snapshot of all frame definitions, in first-definition order.
+     * Updating or reparenting a frame keeps its position in that order.
      */
     public Map<FrameId, Frame3> frames() {
         LinkedHashMap<FrameId, Frame3> out = new LinkedHashMap<>(nodes.size());
@@ -88,7 +94,10 @@ public final class FrameGraph3 {
     }
 
     /**
-     * Register or update a frame with transform to parent.
+     * Register or update a frame with transform to an existing parent.
+     * Reparenting keeps descendants attached to this frame and interprets the supplied
+     * transform in the new parent, without preserving the old world pose.
+     * Missing parents, root redefinition and cycles are rejected without changing state.
      */
     public void define(FrameId frame, FrameId parent, RigidTransform3 parentFromFrame) {
         if (frame == null) throw new NullPointerException("frame");
@@ -108,6 +117,8 @@ public final class FrameGraph3 {
 
     /**
      * Transform from frame to root.
+     * Walks the parent chain in O(h) time, where h is frame depth, with O(1) live
+     * additional memory and O(h) cumulative temporary allocations. Unknown frames fail.
      */
     public RigidTransform3 rootFrom(FrameId frame) {
         return accumulateToRoot(frame).rootFromFrame;
@@ -115,11 +126,16 @@ public final class FrameGraph3 {
 
     /**
      * Transform coordinates from {@code source} frame to {@code target} frame.
+     * Both frames must exist, even when their identifiers are equal. Cost is
+     * O(hSource + hTarget) time with O(1) live additional memory.
      */
     public RigidTransform3 transform(FrameId source, FrameId target) {
         if (source == null) throw new NullPointerException("source");
         if (target == null) throw new NullPointerException("target");
-        if (source.equals(target)) return RigidTransform3.identity();
+        if (source.equals(target)) {
+            requireNode(source, "source");
+            return RigidTransform3.identity();
+        }
 
         RootAccumulation src = accumulateToRoot(source);
         RootAccumulation dst = accumulateToRoot(target);

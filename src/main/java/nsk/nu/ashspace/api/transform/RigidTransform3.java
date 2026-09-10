@@ -6,6 +6,13 @@ import nsk.nu.ashcore.api.math.Vector3;
 /**
  * Immutable rigid transform in 3D (rotation + translation, no scale).
  * Applies to points as: {@code p' = R * p + t}.
+ * <p>Uses Ashcore normalization. The all-zero quaternion means identity for compatibility.
+ * Otherwise the computed squared norm must be finite and at least Double.MIN_NORMAL;
+ * rotations outside that range are rejected before normalization. The resulting squared
+ * norm must differ from one by at most 1e-12 (an absolute, dimensionless tolerance).</p>
+ * <p>Points, vectors, translation and results must be finite. Arithmetic overflow throws
+ * IllegalArgumentException; finite rounding still limits accuracy, especially after
+ * large translations or long composition chains. Directions are not renormalized.</p>
  */
 public record RigidTransform3(Quaternion rotation, Vector3 translation) {
 
@@ -19,7 +26,17 @@ public record RigidTransform3(Quaternion rotation, Vector3 translation) {
         requireFinite(translation.x(), "translation.x");
         requireFinite(translation.y(), "translation.y");
         requireFinite(translation.z(), "translation.z");
+        boolean zero = rotation.w() == 0.0 && rotation.x() == 0.0
+                && rotation.y() == 0.0 && rotation.z() == 0.0;
+        double normSquared = normSquared(rotation);
+        if (!zero && (!Double.isFinite(normSquared) || normSquared < Double.MIN_NORMAL)) {
+            throw new IllegalArgumentException("rotation outside supported normalization range");
+        }
         rotation = rotation.normalized();
+        double normalizedNormSquared = normSquared(rotation);
+        if (!Double.isFinite(normalizedNormSquared) || Math.abs(normalizedNormSquared - 1.0) > 1e-12) {
+            throw new IllegalArgumentException("rotation normalization did not produce a unit quaternion");
+        }
     }
 
     /**
@@ -48,7 +65,8 @@ public record RigidTransform3(Quaternion rotation, Vector3 translation) {
      */
     public Vector3 transformPoint(Vector3 point) {
         if (point == null) throw new NullPointerException("point");
-        return rotation.rotate(point).add(translation);
+        requireFinite(point, "point");
+        return requireFinite(rotation.rotate(point).add(translation), "transformed point");
     }
 
     /**
@@ -56,7 +74,8 @@ public record RigidTransform3(Quaternion rotation, Vector3 translation) {
      */
     public Vector3 transformVector(Vector3 vector) {
         if (vector == null) throw new NullPointerException("vector");
-        return rotation.rotate(vector);
+        requireFinite(vector, "vector");
+        return requireFinite(rotation.rotate(vector), "transformed vector");
     }
 
     /**
@@ -87,6 +106,17 @@ public record RigidTransform3(Quaternion rotation, Vector3 translation) {
 
     private static Quaternion conjugate(Quaternion q) {
         return new Quaternion(q.w(), -q.x(), -q.y(), -q.z());
+    }
+
+    private static double normSquared(Quaternion q) {
+        return q.w() * q.w() + q.x() * q.x() + q.y() * q.y() + q.z() * q.z();
+    }
+
+    private static Vector3 requireFinite(Vector3 value, String name) {
+        requireFinite(value.x(), name + ".x");
+        requireFinite(value.y(), name + ".y");
+        requireFinite(value.z(), name + ".z");
+        return value;
     }
 
     private static void requireFinite(double value, String name) {

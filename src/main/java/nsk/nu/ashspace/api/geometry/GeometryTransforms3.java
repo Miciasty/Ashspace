@@ -15,7 +15,9 @@ public final class GeometryTransforms3 {
     }
 
     /**
-     * Transform a ray.
+     * Transform a ray with finite origin and finite, unit, non-zero direction.
+     * Ashcore's Ray constructor normalizes the rotated direction again. The ray
+     * parameter remains distance in the same units, within floating-point rounding.
      */
     public static Ray ray(RigidTransform3 transform, Ray ray) {
         if (transform == null) throw new NullPointerException("transform");
@@ -52,6 +54,9 @@ public final class GeometryTransforms3 {
 
     /**
      * Transform an AABB and return an axis-aligned box containing the transformed corners.
+     * This is a conservative enclosure, not the exact rotated shape. The containment
+     * guarantee concerns the eight computed corners; no exact-arithmetic error bound
+     * or minimal intersected-cell set is promised. Non-finite results are rejected.
      */
     public static AxisAlignedBox axisAlignedBox(RigidTransform3 transform, AxisAlignedBox box) {
         if (transform == null) throw new NullPointerException("transform");

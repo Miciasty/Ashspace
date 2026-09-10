@@ -212,6 +212,136 @@ class GridSpaceMapper3ApiTest {
                 )));
     }
 
+    @Test
+    void chunk_mapping_preserves_the_negative_side_of_zero() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1.0, Vector3.ZERO, new SquareXZChunkScheme(16));
+        Vector3 point = new Vector3(-Double.MIN_VALUE, 0, -Double.MIN_VALUE);
+
+        // WHEN / THEN
+        assertEquals(new CellIndex3(-1, 0, -1), mapper.worldToCell(point));
+        assertEquals(new ChunkIndex2(-1, -1), mapper.worldToChunk(point));
+        assertEquals(mapper.worldToChunk(point), mapper.worldToChunkAddress(point).chunk());
+        assertEquals(new IntRect2(-1, -1, 0, 0), mapper.worldAabbToChunks(
+                new AxisAlignedBox(point, new Vector3(0, 1, 0))));
+    }
+
+    @Test
+    void subnormal_cell_size_does_not_require_a_finite_reciprocal() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(Double.MIN_VALUE, Vector3.ZERO, new SquareXZChunkScheme(16));
+
+        // WHEN / THEN
+        assertEquals(new CellIndex3(0, 0, 0), mapper.worldToCell(Vector3.ZERO));
+        assertEquals(new CellIndex3(1, -1, 0), mapper.worldToCell(new Vector3(Double.MIN_VALUE, -Double.MIN_VALUE, 0)));
+    }
+
+    @Test
+    void world_outputs_reject_overflow() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(Double.MAX_VALUE, Vector3.ZERO, new SquareXZChunkScheme(16));
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> mapper.cellCorner(new CellIndex3(2, 0, 0)));
+        assertThrows(IllegalArgumentException.class, () -> mapper.cellCenter(new CellIndex3(2, 0, 0)));
+    }
+
+    @Test
+    void all_point_routes_reject_out_of_range_cells() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1.0, Vector3.ZERO, new SquareXZChunkScheme(16));
+        Vector3 point = new Vector3(2147483648.0, 0, 0);
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldToCell(point));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldToChunk(point));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldToChunkAddress(point));
+    }
+
+    @Test
+    void cell_boundaries_do_not_use_an_epsilon() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, Vector3.ZERO, new SquareXZChunkScheme(16));
+        for (double boundary : new double[]{-16, -1, 0, 1, 16}) {
+            // WHEN / THEN
+            assertEquals((int) boundary - 1, mapper.worldToCell(new Vector3(Math.nextDown(boundary), 0, 0)).x());
+            assertEquals((int) boundary, mapper.worldToCell(new Vector3(boundary, 0, 0)).x());
+            assertEquals((int) boundary, mapper.worldToCell(new Vector3(Math.nextUp(boundary), 0, 0)).x());
+        }
+        assertEquals(new IntBox3(0, 0, 0, 1, 1, 1), mapper.worldAabbToCells(
+                new AxisAlignedBox(Vector3.ZERO, new Vector3(Math.nextDown(1.0), 1, 1))));
+        assertEquals(new IntBox3(0, 0, 0, 2, 1, 1), mapper.worldAabbToCells(
+                new AxisAlignedBox(Vector3.ZERO, new Vector3(Math.nextUp(1.0), 1, 1))));
+    }
+
+    @Test
+    void exclusive_range_endpoints_cannot_wrap() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, Vector3.ZERO, new SquareXZChunkScheme(1));
+        AxisAlignedBox representable = new AxisAlignedBox(
+                new Vector3(Integer.MAX_VALUE - 1.0, 0, 0), new Vector3(Integer.MAX_VALUE, 1, 1));
+        AxisAlignedBox tooHigh = new AxisAlignedBox(
+                new Vector3(Integer.MAX_VALUE, 0, 0), new Vector3(2147483648.0, 1, 1));
+
+        // WHEN / THEN
+        assertEquals(Integer.MAX_VALUE, mapper.worldAabbToCells(representable).maxX());
+        assertEquals(Integer.MAX_VALUE, mapper.worldAabbToChunks(representable).cx1());
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToCells(tooHigh));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToChunks(tooHigh));
+        assertEquals(Integer.MIN_VALUE, mapper.worldToCell(new Vector3(Integer.MIN_VALUE, 0, 0)).x());
+        assertThrows(IllegalArgumentException.class,
+                () -> mapper.worldToCell(new Vector3(Math.nextDown((double) Integer.MIN_VALUE), 0, 0)));
+    }
+
+    @Test
+    void intermediate_overflow_is_rejected_by_point_and_range_routes() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, new Vector3(-Double.MAX_VALUE, 0, 0), new SquareXZChunkScheme(16));
+        Vector3 point = new Vector3(Double.MAX_VALUE, 0, 0);
+        AxisAlignedBox box = new AxisAlignedBox(point, new Vector3(Double.MAX_VALUE, 1, 1));
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldToCell(point));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldToChunk(point));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToCells(box));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToChunks(box));
+    }
+
+    @Test
+    void cell_detail_can_be_lost_at_a_large_world_origin() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, new Vector3(0x1.0p54, 0, 0), new SquareXZChunkScheme(16));
+
+        // WHEN / THEN
+        assertEquals(mapper.cellCenter(new CellIndex3(0, 0, 0)), mapper.cellCenter(new CellIndex3(1, 0, 0)));
+        assertEquals(0, mapper.worldToCell(mapper.cellCenter(new CellIndex3(1, 0, 0))).x());
+    }
+
+    @Test
+    void zero_height_is_empty_for_cells_but_not_for_xz_chunks() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, Vector3.ZERO, new SquareXZChunkScheme(16));
+        AxisAlignedBox box = new AxisAlignedBox(new Vector3(-16, 0, -16), new Vector3(16, 0, 16));
+
+        // WHEN / THEN
+        assertEquals(new IntBox3(-16, 0, -16, -16, 0, -16), mapper.worldAabbToCells(box));
+        assertEquals(new IntRect2(-1, -1, 1, 1), mapper.worldAabbToChunks(box));
+    }
+
+    @Test
+    void ranges_do_not_overflow_ashgrid_dimension_helpers() {
+        // GIVEN
+        GridSpaceMapper3 mapper = new GridSpaceMapper3(1, Vector3.ZERO, new SquareXZChunkScheme(1));
+        AxisAlignedBox widest = new AxisAlignedBox(new Vector3(Integer.MIN_VALUE, 0, 0), new Vector3(-1, 1, 1));
+        AxisAlignedBox tooWide = new AxisAlignedBox(new Vector3(Integer.MIN_VALUE, 0, 0), new Vector3(0, 1, 1));
+
+        // WHEN / THEN
+        assertEquals(Integer.MAX_VALUE, mapper.worldAabbToCells(widest).width());
+        assertEquals(Integer.MAX_VALUE, mapper.worldAabbToChunks(widest).width());
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToCells(tooWide));
+        assertThrows(IllegalArgumentException.class, () -> mapper.worldAabbToChunks(tooWide));
+    }
+
     private static void assertVector(Vector3 expected, Vector3 actual, double eps) {
         assertEquals(expected.x(), actual.x(), eps);
         assertEquals(expected.y(), actual.y(), eps);

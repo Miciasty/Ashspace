@@ -50,9 +50,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-001 — Uzgodnić GridSpaceMapper3 z VoxelSpace i ChunkScheme
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** INSPEKCJA  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 3.2, 3.3, 4.2, 4.3
 
 **Gdzie:** [GridSpaceMapper3.java](src/main/java/nsk/nu/ashspace/api/grid/GridSpaceMapper3.java), [ChunkLocalIndexer.java](src/main/java/nsk/nu/ashspace/implementation/grid/ChunkLocalIndexer.java), [GridMappingIntegrationTest.java](src/test/java/nsk/nu/ashspace/integration/grid/GridMappingIntegrationTest.java).
@@ -65,9 +68,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Dla wspieranego schematu worldToChunk(p), cellToChunk(worldToCell(p)) i worldToChunkAddress(p).chunk() opisują ten sam chunk.
-- [ ] Testy obejmują ujemne punkty, granice chunków, przesunięty początek, kilka cellSize oraz wartości tuż po obu stronach granicy.
-- [ ] Udokumentowano wspierany zakres ChunkScheme i różnicę jednostek world/grid; zgodność z VoxelSpace sprawdzono dla wspólnego zakresu.
+- [x] Dla wspieranego schematu worldToChunk(p), cellToChunk(worldToCell(p)) i worldToChunkAddress(p).chunk() opisują ten sam chunk.
+- [x] Testy obejmują ujemne punkty, granice chunków, przesunięty początek, kilka cellSize oraz wartości tuż po obu stronach granicy.
+- [x] Udokumentowano wspierany zakres ChunkScheme i różnicę jednostek world/grid; zgodność z VoxelSpace sprawdzono dla wspólnego zakresu.
 
 **Powiązania:** [GRID-002](../Ashgrid/ISSUES.md#grid-002) i [GRID-006](../Ashgrid/ISSUES.md#grid-006); wynik potrzebny [NAV-003](../Ashnav/ISSUES.md#nav-003). Ashgrid nie może zależeć produkcyjnie od Ashspace.
 
@@ -75,9 +78,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-002 — Zabezpieczyć kontrakt sztywnej transformacji
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** INSPEKCJA  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 3.3, 4.2, 4.3, 4.5
 
 **Gdzie:** [RigidTransform3.java](src/main/java/nsk/nu/ashspace/api/transform/RigidTransform3.java), [RigidTransform3ApiTest.java](src/test/java/nsk/nu/ashspace/api/transform/RigidTransform3ApiTest.java), [FrameSpaceIntegrationTest.java](src/test/java/nsk/nu/ashspace/integration/space/FrameSpaceIntegrationTest.java).
@@ -90,9 +96,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Transformacja z dużymi skończonymi składowymi rotacji zachowuje kontrakt albo jest jawnie odrzucana; zero ma opisane zachowanie.
-- [ ] Testy transform/inverse i złożenia sprawdzają zachowanie długości/kierunku w uzasadnionej tolerancji.
-- [ ] Punkt podlega przesunięciu, kierunek nie; brak przypadkowej obsługi skali/shear w klasie rigid.
+- [x] Transformacja z dużymi skończonymi składowymi rotacji zachowuje kontrakt albo jest jawnie odrzucana; zero ma opisane zachowanie.
+- [x] Testy transform/inverse i złożenia sprawdzają zachowanie długości/kierunku w uzasadnionej tolerancji.
+- [x] Punkt podlega przesunięciu, kierunek nie; brak przypadkowej obsługi skali/shear w klasie rigid.
 
 **Powiązania:** [CORE-001](../Ashcore/ISSUES.md#core-001) i [CORE-004](../Ashcore/ISSUES.md#core-004); po zmianie sprawdź [TRACE-002](../Ashtrace/ISSUES.md#trace-002).
 
@@ -100,9 +106,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-003 — Opisać i sprawdzić granice dokładności mapowania
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** AUDYT  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 4.1, 4.3, 4.5
 
 **Gdzie:** [GridSpaceMapper3.java](src/main/java/nsk/nu/ashspace/api/grid/GridSpaceMapper3.java), [FrameGraph3.java](src/main/java/nsk/nu/ashspace/api/frame/FrameGraph3.java), [GridSpaceMapper3ApiTest.java](src/test/java/nsk/nu/ashspace/api/grid/GridSpaceMapper3ApiTest.java), [README.md](README.md).
@@ -115,9 +124,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Są testy cellCenter→worldToCell w deklarowanym zakresie oraz odrzucania skrajnych/niepoprawnych wartości bez cichego zawijania indeksów.
-- [ ] Przypadki dokładnie na granicy i nextUp/nextDown rozstrzygają zgodnie z udokumentowanym modelem.
-- [ ] README określa środowisko/stabilny stan wymagane dla determinizmu i ograniczenia dokładności.
+- [x] Są testy cellCenter→worldToCell w deklarowanym zakresie oraz odrzucania skrajnych/niepoprawnych wartości bez cichego zawijania indeksów.
+- [x] Przypadki dokładnie na granicy i nextUp/nextDown rozstrzygają zgodnie z udokumentowanym modelem.
+- [x] README określa środowisko/stabilny stan wymagane dla determinizmu i ograniczenia dokładności.
 
 **Powiązania:** [CORE-002](../Ashcore/ISSUES.md#core-002) oraz [CORE-004](../Ashcore/ISSUES.md#core-004) i [GRID-002](../Ashgrid/ISSUES.md#grid-002); testy integracyjne [NAV-003](../Ashnav/ISSUES.md#nav-003) powinny używać tych samych przykładów.
 
@@ -125,9 +134,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-004 — Doprecyzować mutację ramek i konserwatywne obwiednie
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** AUDYT  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 3.3, 4.1, 4.2
 
 **Gdzie:** [FrameGraph3.java](src/main/java/nsk/nu/ashspace/api/frame/FrameGraph3.java), [GeometryTransforms3.java](src/main/java/nsk/nu/ashspace/api/geometry/GeometryTransforms3.java), [SpaceConverter3.java](src/main/java/nsk/nu/ashspace/api/space/SpaceConverter3.java), [GeometryTransforms3ApiTest.java](src/test/java/nsk/nu/ashspace/api/geometry/GeometryTransforms3ApiTest.java), [README.md](README.md).
@@ -140,9 +152,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Testy obwiedni zawierają narożniki obróconego pudełka, a dokumentacja nie nazywa wyniku dokładnym kształtem ani minimalnym zbiorem komórek.
-- [ ] Umowa mutacji i odpowiedzialność za stabilny stan w zapytaniu są jawne; nie obiecano thread-safety bez implementacji.
-- [ ] Testy relacji ramek i złożenia obejmują brak ramki, cykl i aktualizację transformacji zgodnie z API.
+- [x] Testy obwiedni zawierają narożniki obróconego pudełka, a dokumentacja nie nazywa wyniku dokładnym kształtem ani minimalnym zbiorem komórek.
+- [x] Umowa mutacji i odpowiedzialność za stabilny stan w zapytaniu są jawne; nie obiecano thread-safety bez implementacji.
+- [x] Testy relacji ramek i złożenia obejmują brak ramki, cykl i aktualizację transformacji zgodnie z API.
 
 **Powiązania:** [TRACE-002](../Ashtrace/ISSUES.md#trace-002) musi używać jednej spójnej konfiguracji ramek podczas obliczania obiektów i zasłaniania.
 
@@ -150,9 +162,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-005 — Zachować zgodność publicznych typów i przykładów
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** DECYZJA  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 5, 5.1, 8
 
 **Gdzie:** [README.md](README.md), [GridSpaceMapper3.java](src/main/java/nsk/nu/ashspace/api/grid/GridSpaceMapper3.java), [RigidTransform3.java](src/main/java/nsk/nu/ashspace/api/transform/RigidTransform3.java).
@@ -165,9 +180,9 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Quick start kompiluje się na docelowych wersjach zależności.
-- [ ] Opis stabilności obejmuje zmiany walidacji i wyników mapowania; wybrano właściwą wersję biblioteki.
-- [ ] Zapisano ewentualną migrację dla Ashtrace i Ashnav, bez nadpisywania opublikowanej wersji.
+- [x] Quick start kompiluje się na docelowych wersjach zależności.
+- [x] Opis stabilności obejmuje zmiany walidacji i wyników mapowania; wybrano właściwą wersję biblioteki.
+- [x] Zapisano ewentualną migrację dla Ashtrace i Ashnav, bez nadpisywania opublikowanej wersji.
 
 **Powiązania:** [GRID-006](../Ashgrid/ISSUES.md#grid-006) i [CORE-006](../Ashcore/ISSUES.md#core-006); konsumenci: [TRACE-005](../Ashtrace/ISSUES.md#trace-005) i [NAV-007](../Ashnav/ISSUES.md#nav-007).
 
@@ -175,9 +190,12 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 ## SPACE-006 — Dostosować CI, pakowanie i dowody wydania
 
-**Status:** OTWARTE  
-**Priorytet:** P1  
-**Dowód:** INSPEKCJA  
+**Status:** GOTOWE
+
+**Priorytet:** P1
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md)
+
 **Kontrakt:** sekcje 2, 4.5, 6
 
 **Gdzie:** [pom.xml](pom.xml), [.github/workflows/maven.yml](.github/workflows/maven.yml), [.github/workflows/publish.yml](.github/workflows/publish.yml), [README.md](README.md).
@@ -190,10 +208,10 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Warunki zamknięcia:**
 
-- [ ] Zapisano wynik mvn -B clean verify z wymaganymi testami oraz wersje JDK/Maven; CI obejmuje faktycznie utrzymywane gałęzie i PR-y.
-- [ ] Główny JAR, sources, Javadoc i wymagane zasoby są sprawdzone. Błędny Javadoc nie jest po cichu uznawany za poprawny; nie trzeba przy tym mechanicznie włączać każdej reguły stylistycznej doclint.
-- [ ] Wskazano używane cele publikacji, tag/wersję i dowody dostępności albo jawnie pozostawiono publikację jako niezweryfikowaną. Sam deploy nie służy jako test poprawek.
-- [ ] Sprawdzono efektywne zależności i ich scope; test integracyjny korzysta z zamierzonej wersji dolnej warstwy, a nie przypadkowej starej kopii z lokalnego Maven.
+- [x] Zapisano wynik mvn -B clean verify z wymaganymi testami oraz wersje JDK/Maven; CI obejmuje faktycznie utrzymywane gałęzie i PR-y.
+- [x] Główny JAR, sources, Javadoc i wymagane zasoby są sprawdzone. Błędny Javadoc nie jest po cichu uznawany za poprawny; nie trzeba przy tym mechanicznie włączać każdej reguły stylistycznej doclint.
+- [x] Wskazano używane cele publikacji, tag/wersję i dowody dostępności albo jawnie pozostawiono publikację jako niezweryfikowaną. Sam deploy nie służy jako test poprawek.
+- [x] Sprawdzono efektywne zależności i ich scope; test integracyjny korzysta z zamierzonej wersji dolnej warstwy, a nie przypadkowej starej kopii z lokalnego Maven.
 
 **Powiązania:** Wspólny wzorzec: [TEMPLATE-001](../Ashtemplate/ISSUES.md#template-001) i [TEMPLATE-002](../Ashtemplate/ISSUES.md#template-002). Tę korektę można wykonać niezależnie od napraw algorytmów. Istniejącego numeru wydania nie nadpisuj innym artefaktem.
 
@@ -208,3 +226,17 @@ Po kolejnej sesji dopisz wiersz i uzupełnij statusy odpowiednich zadań. Zapisz
 | Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
 | --- | --- | --- | --- | --- |
 | 2026-09-09 / punkt odniesienia powyżej | Wszystkie: OTWARTE | Utworzenie planu korekt | Inspekcja statyczna; testów bibliotek nie uruchomiono | Rozpocząć od wskazanego P1 |
+
+### Korekta 2026-09-10
+
+**SPACE-001–SPACE-006: GOTOWE w zakresie lokalnej korekty.** Szczegółowe decyzje, pokrycie testami, środowisko, sumy artefaktów, zależności i ograniczenia zapisano w [VERIFICATION.md](VERIFICATION.md). Status nie oznacza publikacji ani wykonania nowych workflow na GitHubie.
+
+Pracę wykonano wyłącznie w Ashspace, na gałęzi `fix/ashspace-contract-v2-20260910`, po commicie zabezpieczającym `b976a15`. Zachowano publiczne typy i sygnatury. Wersja robocza to **2.0.0-SNAPSHOT** ze względu na ostrzejszą walidację i zmienione wyniki mapowania na granicach. Poprzedniego wydania nie nadpisano.
+
+| Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
+| --- | --- | --- | --- | --- |
+| 2026-09-10 / commit zawierający ten wpis; checkpoint `b976a15` | SPACE-001, SPACE-003: GOTOWE | Dzielenie zgodne z VoxelSpace; wszystkie adresy przez komórkę; standardowy XZ z przechwyconym chunkSize; walidacja finite, końców i długości zakresów; granice precyzji | Testy granic ujemnych, nextUp/nextDown, różnych rozmiarów/początków, subnormalnych rozmiarów, int i round-trip; końcowe `clean verify`: PASS | GRID-002/GRID-006 pozostają u Ashgrid; integracja NAV-003 przy aktualizacji konsumenta |
+| 2026-09-10 / ten sam zestaw zmian | SPACE-002, SPACE-004: GOTOWE | Kontrola zakresu normalizacji i normy wynikowej; zero zachowuje identity; walidacja punktów/wektorów; brakująca ramka do siebie odrzucana; umowa snapshotów, mutacji i obwiedni | Testy długości, inverse/then, Ray, cykli, reparentingu, kolejności i narożników; końcowe `clean verify`: PASS | CORE-001 pozostaje u Ashcore; TRACE-002 wymaga stabilnego grafu podczas całego zapytania |
+| 2026-09-10 / ten sam zestaw zmian | SPACE-005, SPACE-006: GOTOWE lokalnie | README i migracja 2.0.0-SNAPSHOT; release 21 i przypięte pluginy; Javadoc bez ukrywania błędów; test gotowego JAR, źródeł, dokumentacji i przykładu; CI obejmuje main i PR | JDK Adoptium 21.0.12.1+1, Maven 3.9.9; 54 testy + 2 testy artefaktów, 0 błędów/pominięć; actionlint 1.7.7 PASS; zależności z pustego izolowanego repo Maven Central | Publikacja do Packages/Central i zdalne wykonanie CI NIEZWERYFIKOWANE; konsumentów nie zmieniano; przed wydaniem właściciel sprawdza tag/wersję/destynacje |
+
+Pierwsze 31 istniejących testów przechodziło. Dodane regresje przed naprawą dały 6 porażek i 1 błąd wykonania w 39 testach; po korekcie wszystkie przeszły. Końcowe 56 testów obejmuje późniejsze rozszerzenia. Nie używano deploy jako testu ani lokalnego builda sąsiedniej biblioteki jako zamiennika opublikowanej zależności.
