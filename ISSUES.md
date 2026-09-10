@@ -50,6 +50,7 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 | [SPACE-009](#space-009) | P1 | ROZSZERZENIE | Siatka związana z ruchomą ramką |
 | [SPACE-010](#space-010) | P1 | KOREKTA | Transformacje względem wspólnego przodka |
 | [SPACE-011](#space-011) | P1 | KOREKTA | Zachować stronę granicy, gdy iloraz współrzędnej zanika do zera |
+| [SPACE-012](#space-012) | P2 | DECYZJA | Zachować kształt prymitywów przy konwersjach ramek |
 
 <a id="space-001"></a>
 
@@ -327,6 +328,37 @@ Wersja Ashspace pozostaje rozwojowa 2.0.0-SNAPSHOT; wymaga dostarczenia tych zal
 Testy konsumenta i niezmienione testy sąsiednich bibliotek są uruchamiane z nowym JAR-em w Ashtrace;
 dalsze dowody znajdują się w [VERIFICATION.md](VERIFICATION.md) oraz [raporcie Ashtrace](../Ashtrace/VERIFICATION.md).
 
+## Uwagi o zakresie kolizji — 2026-09-10
+
+Użytkownik zlecił uzupełnienie backlogu w granicach rewizji 2.0. Nowa propozycja dotyczy konwersji geometrii, nie kontrolera ruchu ani wykrywania kolizji. Punkt odniesienia: lokalne źródła odczytane 2026-09-10; zgodnie z bieżącą instrukcją nie wykonywano operacji Git ani nowego checkpointu.
+
+<a id="space-012"></a>
+
+## SPACE-012 — Zachować kształt prymitywów przy konwersjach ramek
+
+**Status:** OTWARTE  
+**Priorytet:** P2  
+**Dowód:** DECYZJA, oparta na inspekcji istniejących adapterów  
+**Kontrakt:** sekcje 2, 3.3, 4.2–4.5, 5, 7
+
+**Gdzie:** [GeometryTransforms3.java](src/main/java/nsk/nu/ashspace/api/geometry/GeometryTransforms3.java), [SpaceConverter3.java](src/main/java/nsk/nu/ashspace/api/space/SpaceConverter3.java), [RigidTransform3.java](src/main/java/nsk/nu/ashspace/api/transform/RigidTransform3.java), testy geometry/space i [README.md](README.md).
+
+**Stan i znaczenie:** GeometryTransforms3 przekształca promienie, odcinki i sfery. axisAlignedBox zwraca obwiednię ośmiu przekształconych narożników i jawnie dopuszcza dodatkową przestrzeń. Ashcore ma kapsułę, ale nie ma jeszcze typu OBB. Obecna konwersja AABB działa zgodnie z kontraktem.
+
+**Praca do wykonania:** Rozważyć małe konwersje zachowujące kształt: kapsułę przez przekształcenie obu końców z zachowaniem promienia oraz, po ustaleniu CORE-011, AABB→OBB i OBB→OBB przez sztywny obrót i przesunięcie. Użyć geometrii Ashcore i istniejącej algebry RigidTransform3. W nazwach i opisie rozdzielić zachowany kształt od konserwatywnej obwiedni. Skala i ścinanie pozostają poza modelem.
+
+Nie dodawać własnych testów przecięć OBB, typu OBB należącego do wyższej warstwy, indeksu kolizji, zegara animacji ani podparcia postaci. Przeliczenie punktu ze starego ustawienia do nowego jest już możliwe przez złożenie transformacji; nie stanowi brakującego kontrolera ruchomego pokładu.
+
+**Warunki zamknięcia:**
+
+- [ ] Zapisano wspierane konwersje. Część OBB używa ustalonego API i zidentyfikowanego artefaktu Ashcore; konwersję kapsuły można rozstrzygnąć niezależnie.
+- [ ] Testy obejmują przesunięcie, obroty 45°/90°/180°, ramy zagnieżdżone, odwrotność oraz niepoprawne i zdegenerowane dane według kontraktu prymitywu.
+- [ ] Potwierdzono zachowanie promienia kapsuły, wymiarów OBB i punktów powierzchni w uzasadnionej tolerancji. Przykład odróżnia punkt w osiowej obwiedni od punktu w obróconej bryle.
+- [ ] Nowe operacje respektują istniejące zasady live/snapshot i spójności zapytania; nie deklarują migawki storage ani indeksu.
+- [ ] Istniejące axisAlignedBox i mapowanie do komórek zachowują konserwatywną semantykę. Opisano precyzję, koszty i zgodność; implementacja przechodzi testy oraz clean verify.
+
+**Powiązania:** [CORE-011](../Ashcore/ISSUES.md#core-011), [SPACE-002](#space-002), [SPACE-004](#space-004), [SPACE-008](#space-008), [TRACE-012](../Ashtrace/ISSUES.md#trace-012). Propozycja P2 nie otwiera ponownie zamkniętych zadań. Jej odrzucenie zapisać jako NIE DOTYCZY z uzasadnieniem; dopisanie planu nie oznacza GOTOWE.
+
 ## Stan przekazania i dziennik sesji
 
 **Na 2026-09-09:** wszystkie zadania pozostają OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
@@ -360,3 +392,11 @@ Pierwsze 31 istniejących testów przechodziło. Dodane regresje przed naprawą 
 `clean verify` Ashspace: **72 testy + 2 testy gotowych artefaktów, PASS**. Istniejące testy konsumentów z tym samym JAR-em: **Ashtrace 43, Ashnav 29, PASS**. Kopie źródeł uruchomiono pod `Ashspace/.verification/consumer-tests`; tylko ich skopiowane POM-y wskazywały roboczą zależność 2.0.0-SNAPSHOT. Sumy 63 oryginalnych plików źródłowych/testowych/POM pozostały niezmienione. Szczegóły i commity wejściowe: [VERIFICATION.md](VERIFICATION.md).
 
 Testy konsumentów obejmują współpracę bibliotek, m.in. frame-aware tracing i world-to-grid navigation. Nie wymagają osobnej aplikacji. Nie uruchamiano gry/pluginu, benchmarków ani publikacji. Snapshot dotyczy wyłącznie ramek; dane siatki i pozostałe indeksy nadal wymagają spójnego stanu po stronie aplikacji.
+
+### Przegląd zakresu kolizji 2026-09-10
+
+**Stan bieżącego przeglądu:** SPACE-001–SPACE-011 zachowują dotychczasowe statusy. SPACE-012 jest otwartą propozycją P2, nie błędem obecnego axisAlignedBox ani warunkiem wydania aktualnego zakresu.
+
+| Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
+| --- | --- | --- | --- | --- |
+| 2026-09-10 / bez operacji Git, zgodnie z instrukcją użytkownika | SPACE-012: OTWARTE, P2 / DECYZJA | Konwersje zachowujące kształt kapsuły i przyszłego OBB; wyłącznie backlog | Inspekcja źródeł; kontrola struktury, odnośników i zachowania wcześniejszej treści. Testów bibliotek i buildów nie uruchamiano | Rozstrzygnąć konwersję kapsuły; część OBB zależy od CORE-011. |
