@@ -1,6 +1,97 @@
 # Ashspace verification record
 
-Latest correction: [SPACE-011 quotient underflow](#2026-09-10--grid-quotient-underflow-space-011).
+Latest correction: [SPACE-012 shape conversions](#2026-09-10--shape-preserving-conversions-space-012).
+
+## 2026-09-10 — Shape-preserving conversions (SPACE-012)
+
+Branch: `fix/ashspace-shape-conversions-20260910`; checkpoint `93c28e3` records the incoming backlog;
+implementation baseline `f652173`. All writes, Maven metadata, logs and outputs stayed inside Ashspace.
+Coordinates remain `dev.nasaka.blackframe:ashspace:2.0.0-SNAPSHOT`; no released coordinate was replaced.
+
+### Scope and compatibility
+
+`GeometryTransforms3` and `SpaceConverter3` now convert capsules, AABBs to OBBs and OBBs to OBBs.
+Capsule endpoints and box centers use the existing rigid point transform. Radius and existing OBB half
+extents are copied exactly. OBB orientation applies box-local rotation before the frame rotation, using
+Ashcore quaternion composition. AABB center/half-extent conversion avoids overflow when half the side
+length remains representable. Double rounding can still collapse tiny extents or nearby coordinates;
+README and Javadoc state this limit, supported degeneracies, units and invalid-input behavior.
+
+All three frame conversions resolve one relative transform. Live graphs reflect later updates; frozen
+graphs and returned values remain unchanged after live removal. Common-ancestor calculation remains
+usable even when a shared ancestor's world transform overflows. Storage and tracing indexes are not copied.
+Existing `axisAlignedBox` and grid mapping implementations are unchanged and retain conservative semantics.
+No collision algorithm, geometry type, scale, shear or motion runtime was added to Ashspace.
+
+The six methods are additive. `javap -public` comparison for all 11 class entries in the previous JAR
+found **six added methods and zero removed public signatures**. Baseline JAR SHA-256:
+`7f0e82346ee9c880a42e68eb24902439af7e9aba5ad7222b39930d9ab3cb0e94`, matching the SPACE-011 record below.
+It was read from Ashtrace's isolated repository; no consumer files were modified. Listings are retained
+as `.verification/shape-api-before.txt` and `.verification/shape-api-after.txt`.
+
+### Dependency identity
+
+Ashcore `1.2.0-SNAPSHOT` supplies the established CORE-011 `OrientedBox` API. Its owner checkout was
+inspected at `ddbf98cb092603e3543c71485a34b5e1a36264c0`; the copied JAR matches both Ashcore's current
+`target` and its recorded isolated `extensions-repository` artifact. Ashgrid remains `1.3.0-SNAPSHOT`;
+its JAR copied from Ashtrace's integration repository matches the current Ashgrid `target` (checkout
+`8199f9be15ff2238514fc392b6580649da42255f`). Neither lower-layer project was rebuilt or edited here.
+JARs and matching POM/metadata directories were copied into Ashspace's `.verification/repository`.
+
+| Resolved compile dependency | SHA-256 of the JAR actually used |
+| --- | --- |
+| `dev.nasaka.blackframe:ashcore:1.2.0-SNAPSHOT` | `4aca690477eea1f3943e3c8b333da6882ff9f76fd2d99f2ceb2a6a0a9d9e1379` |
+| `dev.nasaka.blackframe:ashgrid:1.3.0-SNAPSHOT` | `b4a8d0ac87ebe34132f1f86d8870e8f32f5f270b95d263a0fc21e345a6e71285` |
+
+The dependency tree and Surefire XML classpath confirm these versions. The direct Ashcore dependency
+wins over Ashgrid's older declared transitive version; the tests did not load that older Core JAR.
+JUnit 5.10.2 and its dependencies remain test-scoped. Hosted builds and consumers must provision the
+identified snapshots; their remote availability was not checked. Runtime users of the new API need
+Ashcore 1.2.0-SNAPSHOT and must not force an older version onto the classpath.
+
+### Executed checks
+
+Windows 11 amd64, Eclipse Adoptium **21.0.12.1+1**, Maven **3.9.9**, UTF-8/pl_PL, compiler release **21**.
+The local JDK is `.verification/jdk/jdk-21.0.12.1+1`; Maven is `.verification/apache-maven-3.9.9/bin/mvn.cmd`.
+With `JAVA_HOME` pointing to that JDK, the following commands ran from Ashspace using explicit settings
+and the isolated repository, offline:
+
+```text
+mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=.verification/repository clean test
+mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=.verification/repository -Dtest=ShapeTransforms3ApiTest,ShapeSpaceConverter3ApiTest test
+mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=.verification/repository clean verify dependency:tree
+```
+
+| Check | Actual result |
+| --- | --- |
+| Baseline before edits, with Ashcore 1.1.0-SNAPSHOT | **74 tests passed**, no failures/errors/skips. |
+| Focused acceptance tests for new API | **13 tests passed**, no failures/errors/skips. These are feature acceptance tests, not reproduced failures of the former API. |
+| Final `clean verify dependency:tree` | **87 tests + 2 packaged-artifact tests passed**, no failures/errors/skips. Finished 2026-09-10 15:56:18 +02:00, exit 0. |
+| Javadoc and exact main/sources/Javadoc JARs | Passed with doclint `all,-missing` and errors enabled; representative geometry/converter entries and notices checked. |
+| Complete README Java example against the packaged JAR | Compiled with release 21 and ran successfully through an isolated classloader. Capsule radius `0.5`, returned half extents `(1,1,1)`, `insideEnclosure=true`, `insideShape=false`; both ship-cell outputs remain `(1,0,1)`. |
+
+The 13 new tests cover translation, 45/90/180-degree rotations, noncommuting orientation order,
+capsule axis length and six surface points, all eight box corners and six face centers, inverse round
+trips, nested frames, live updates/removal, snapshots, relative queries under overflowing ancestors,
+null/missing frames, non-finite legacy AABBs, output overflow, degenerate shapes, extreme bounds and
+documented half-extent underflow. Moderate-scale coordinate assertions use absolute `1e-12`; copied
+radii and half extents use exact assertions. This tolerance is not a global accuracy guarantee.
+Existing mapping tests, including Ashgrid agreement and quotient underflow, passed with the new Core.
+
+Logs: `.verification/shape-baseline.log`, `shape-focused.log`, `shape-verify.log`; XML reports in `target`.
+No test/build attempt failed. Initial Git inspection found that the workspace parent is not a repository;
+Ashspace ownership was handled with per-command `safe.directory`, without global configuration changes.
+
+| Output | SHA-256 |
+| --- | --- |
+| `target/ashspace-2.0.0-SNAPSHOT.jar` | `eec0770d713355b67e856a831ff3d370e41baf0fedabaa9005f86dd58171f389` |
+| `target/ashspace-2.0.0-SNAPSHOT-sources.jar` | `e8cdb8340e199a800da4f0ea3e179bd1aa1f270d5f68dccacd045b82e4c32529` |
+| `target/ashspace-2.0.0-SNAPSHOT-javadoc.jar` | `4e51286e0174dcb674599ea3a3acaec5c3a20d357acc90bd740604f5524f5284` |
+| `pom.xml` | `5ce0198d0affd786f37e606a93595b1b350b78e91cf837516bfff15ca3827851` |
+
+SPACE-012 is complete locally. The earlier SPACE-001–SPACE-011 statuses are retained. No consumer suite,
+benchmark, cross-platform repeatability check, remote CI, tag, push or publication was run in this session.
+TRACE-012 adoption remains in Ashtrace; the release destinations and release-owner checks below still apply.
 
 ## 2026-09-10 — contract revision 2.0 corrections
 

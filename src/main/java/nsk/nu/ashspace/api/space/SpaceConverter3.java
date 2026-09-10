@@ -1,6 +1,8 @@
 package nsk.nu.ashspace.api.space;
 
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.Capsule;
+import nsk.nu.ashcore.api.geometry.OrientedBox;
 import nsk.nu.ashcore.api.geometry.Ray;
 import nsk.nu.ashcore.api.geometry.Segment3;
 import nsk.nu.ashcore.api.geometry.Sphere;
@@ -125,6 +127,36 @@ public final class SpaceConverter3 {
     public Segment3 segment(Segment3 segment, FrameId source, FrameId target) {
         if (segment == null) throw new NullPointerException("segment");
         return GeometryTransforms3.segment(transform(source, target), segment);
+    }
+
+    /**
+     * Convert capsule endpoints from source to target, preserving the radius exactly.
+     * Uses one frame transform and the limits of
+     * {@link GeometryTransforms3#capsule(RigidTransform3, Capsule)}.
+     */
+    public Capsule capsule(Capsule capsule, FrameId source, FrameId target) {
+        if (capsule == null) throw new NullPointerException("capsule");
+        return GeometryTransforms3.capsule(transform(source, target), capsule);
+    }
+
+    /**
+     * Convert a source AABB to an OBB in the target frame, preserving the rotated
+     * shape within rounding. Uses one frame transform and the limits of
+     * {@link GeometryTransforms3#orientedBox(RigidTransform3, AxisAlignedBox)}.
+     */
+    public OrientedBox orientedBox(AxisAlignedBox box, FrameId source, FrameId target) {
+        if (box == null) throw new NullPointerException("box");
+        return GeometryTransforms3.orientedBox(transform(source, target), box);
+    }
+
+    /**
+     * Convert an OBB from source to target, preserving its half extents exactly.
+     * Uses one frame transform and the limits of
+     * {@link GeometryTransforms3#orientedBox(RigidTransform3, OrientedBox)}.
+     */
+    public OrientedBox orientedBox(OrientedBox box, FrameId source, FrameId target) {
+        if (box == null) throw new NullPointerException("box");
+        return GeometryTransforms3.orientedBox(transform(source, target), box);
     }
 
     /**

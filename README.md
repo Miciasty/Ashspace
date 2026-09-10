@@ -79,6 +79,7 @@ Definitions:
 | `GridSpaceMapper3.worldAabbToChunks` | `O(1)` | Fixed number of scalar ops + chunk projection. |
 | `FrameGridSpaceMapper3` point/center/range conversion | `O(hs + ht)` | One frame conversion plus fixed-size mapping; `O(1)` live additional memory. |
 | `GeometryTransforms3.axisAlignedBox` | `O(1)` | 8 transformed corners. |
+| `GeometryTransforms3.capsule/orientedBox` | `O(1)` | Fixed-size coordinate/orientation math; `O(1)` additional memory, with allocation. |
 
 Transform walks need `O(1)` live additional memory and create `O(d)` temporary transform values plus constant overhead. `rootFrom` composes all `h` parent edges. There is no transform cache: deeper chains require more parent-link inspection, while nearby frames under a deep common ancestor still need only their relative edges composed. These are operation counts, not latency measurements or an allocation-free guarantee. No benchmark claim is made.
 
@@ -92,10 +93,13 @@ Transform walks need `O(1)` live additional memory and create `O(d)` temporary t
 - `half-open range`: interval `[min, max)` where `max` is excluded.
 - `chunk address`: pair `(chunkIndex, chunkLocal)` for a mapped cell.
 - `space convention`: right-handed coordinates with `Y` as up axis.
+- `capsule`: a segment thickened by a radius, with spherical ends.
+- `oriented box` (OBB): a box described by its center, half side lengths and orientation; its axes can rotate.
+- `axis-aligned box` (AABB): a box whose sides follow the current coordinate axes; enclosing a rotated shape can add space.
 
 ## 8. Quick-start
 
-Requires a JDK 21+ and Maven; verification uses Java release 21. The current development dependencies are **Ashcore 1.1.0-SNAPSHOT** and **Ashgrid 1.3.0-SNAPSHOT**. Provision these verified artifacts before building; local availability does not establish remote publication. JUnit 5.10.2 is test-only. Earlier verification with released dependencies remains recorded in VERIFICATION.md.
+Requires a JDK 21+ and Maven; verification uses Java release 21. The current development dependencies are **Ashcore 1.2.0-SNAPSHOT** and **Ashgrid 1.3.0-SNAPSHOT**. Provision these verified artifacts before building; local availability does not establish remote publication. JUnit 5.10.2 is test-only. Earlier verification with released dependencies remains recorded in VERIFICATION.md.
 
 For this unpublished snapshot, build the checkout with `mvn -B clean verify`. To use its coordinates in another local Maven project, run `mvn -B install` after verification. This installs the snapshot locally; it does not publish it.
 
@@ -112,12 +116,18 @@ Maven:
 Minimal usage example:
 
 ```java
+import nsk.nu.ashcore.api.collision.CollisionTests;
+import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
+import nsk.nu.ashcore.api.geometry.Capsule;
+import nsk.nu.ashcore.api.geometry.OrientedBox;
+import nsk.nu.ashcore.api.geometry.Sphere;
 import nsk.nu.ashcore.api.math.Vector3;
 import nsk.nu.ashcore.api.math.Quaternion;
 import nsk.nu.ashgrid.implementation.grid.indexing.SquareXZChunkScheme;
 import nsk.nu.ashgrid.api.grid.indexing.CellIndex3;
 import nsk.nu.ashspace.api.frame.FrameGraph3;
 import nsk.nu.ashspace.api.frame.FrameId;
+import nsk.nu.ashspace.api.geometry.GeometryTransforms3;
 import nsk.nu.ashspace.api.grid.GridSpaceMapper3;
 import nsk.nu.ashspace.api.grid.FrameGridSpaceMapper3;
 import nsk.nu.ashspace.api.space.SpaceConverter3;
@@ -145,6 +155,20 @@ public final class AshspaceQuickStart {
         System.out.println("cell=" + mapper.worldToCell(worldPoint));
         System.out.println("chunkAddress=" + mapper.worldToChunkAddress(worldPoint));
 
+        Capsule tool = new Capsule(Vector3.ZERO, new Vector3(0, 2, 0), 0.5);
+        System.out.println("toolRadius=" + converter.capsule(tool, ship, world).radius());
+        AxisAlignedBox localBox = new AxisAlignedBox(new Vector3(-1, -1, -1), new Vector3(1, 1, 1));
+        OrientedBox worldBox = converter.orientedBox(localBox, ship, world);
+        System.out.println("localHalfExtents=" + converter.orientedBox(worldBox, world, ship).halfExtents());
+
+        RigidTransform3 turn = new RigidTransform3(
+                Quaternion.fromAxisAngle(new Vector3(0, 1, 0), Math.PI / 4), Vector3.ZERO);
+        OrientedBox rotatedShape = GeometryTransforms3.orientedBox(turn, localBox);
+        AxisAlignedBox enclosure = GeometryTransforms3.axisAlignedBox(turn, localBox);
+        Vector3 probe = new Vector3(1.3, 0, 1.3);
+        System.out.println("insideEnclosure=" + enclosure.contains(probe));
+        System.out.println("insideShape=" + CollisionTests.sphereVsOrientedBox(new Sphere(probe, 0), rotatedShape));
+
         FrameGraph3 queryFrames = frames.snapshot();
         FrameGridSpaceMapper3 shipGrid = new FrameGridSpaceMapper3(
                 queryFrames, ship, 0.5, Vector3.ZERO, new SquareXZChunkScheme(16)
@@ -167,11 +191,19 @@ The first mapper describes a world-aligned grid. `shipGrid` describes the ship's
 
 The example uses one graph snapshot for a complete query. Removing the ship from the live graph afterward leaves that snapshot usable; both `shipCell` lines print `CellIndex3[x=1, y=0, z=1]`. A mapper constructed with the live graph observes later motion and rejects queries referencing a removed frame. `shipGrid.snapshot()` freezes that frame-attached mapper's frame state. Grid storage belongs to Ashgrid and is not copied by either snapshot operation.
 
+The tool capsule keeps radius `0.5`, and converting the box to the world and back keeps half extents `(1, 1, 1)`. For the separate 45-degree cube, `(1.3, 0, 1.3)` is inside its enclosing AABB but outside the rotated shape: the last geometry checks print `true` and `false`. The zero-radius sphere is Ashcore's point-contact query; Ashspace supplies only the conversion.
+
 ## 9. Coordinates, state and numerical limits
 
 Coordinates are right-handed with Y up. `parentFromFrame` converts child coordinates into parent coordinates. `a.then(b)` applies `a` first, then `b`. A point is rotated and translated; a vector or direction is only rotated, retaining its length within rounding. No scale or shear is supported.
 
 `RigidTransform3` uses Ashcore's quaternion normalization. Zero rotation components retain the earlier identity convention. A nonzero quaternion is accepted only when its computed squared norm is finite and at least `Double.MIN_NORMAL`; extreme magnitudes are rejected rather than silently producing a different rotation. The normalized squared norm must be within an absolute, dimensionless `1e-12` of one. Points, vectors, translations and results must be finite; invalid values or arithmetic overflow raise `IllegalArgumentException` (null object arguments raise `NullPointerException`). A transformed ray requires a valid finite Ashcore ray with nonzero unit direction. Its parameter remains distance in the same world units, within rounding, because a rigid transform preserves length.
+
+`GeometryTransforms3.capsule` transforms both endpoints and copies the radius exactly. `orientedBox(transform, aabb)` returns the rotated shape as an Ashcore OBB; `orientedBox(transform, obb)` moves its center, applies the existing box orientation first and the transform rotation second, and copies half extents exactly. `SpaceConverter3` provides the same three conversions with source/target frame arguments. Each obtains one relative transform and follows the same live/snapshot rules as point conversion. Geometry conversion does not freeze storage or a tracing index.
+
+Capsule radii and OBB half extents must be finite and non-negative, as enforced by Ashcore constructors. Equal capsule endpoints represent a sphere; zero radius represents a segment or point. Zero box extents represent a rectangle, segment or point. OBB orientation must be a finite nonzero quaternion and is normalized by Ashcore; unlike `RigidTransform3`, a zero OBB orientation is invalid. AABB conversion rejects non-finite bounds, and all conversions reject non-finite transformed coordinates. Coordinates, radii and half extents use compatible position units; there is no scale or shear.
+
+Shape preservation describes the rigid model within double rounding. Converting AABB bounds into a center and half extents can lose small dimensions; for example, half of `Double.MIN_VALUE` rounds to zero. Large translations can make distinct capsule endpoints or surface points indistinguishable. The AABB adapter avoids overflow of a full side length when its half remains representable, but this does not promise that subsequent Ashcore collision queries support the same extreme bounds. Existing `axisAlignedBox` still encloses its eight computed corners, and grid range mapping still uses that conservative enclosure. The new surface/round-trip tests use `1e-12` absolute coordinate tolerance for moderate coordinates (tens of units), with exact assertions for copied radii and half extents; this is test evidence, not a universal geometric error bound.
 
 Cell lookup evaluates `floor((world - worldOrigin) / cellSize)` with rounded double subtraction and division, matching `VoxelSpace` for finite, representable cell indices. If a nonzero quotient underflows to signed zero, the mapper preserves its side of the boundary for floor/ceil selection: a negative offset remains in cell -1 and a positive offset in cell 0. The same rule applies to half-open range endpoints. With unit cells at zero, `-0.2` maps to `-1`. No epsilon moves an ordinary point across a cell boundary. Even a mathematically exact decimal boundary can round to one side.
 
@@ -179,7 +211,7 @@ Both mappers support only zero-based square XZ chunks within the grid's coordina
 
 `cellSize` may be any positive finite double, including subnormal values. Inputs and intermediate/output coordinates must be finite; all point-mapping routes require all three floored cell coordinates to fit a signed 32-bit `int`. Tiny sizes can overflow the division, and subtraction can overflow for opposite large coordinates. Those cases are rejected. Preserving an underflowed quotient's sign does not restore lost distance precision or distinguish all extents collapsed by rounding.
 
-AABB mapping treats the normalized maximum as excluded and returns half-open integer ranges. This differs from geometric contact tests that include the box boundary. Zero extent in any axis makes a cell range empty; chunk ranges use only XZ and ignore Y extent. Ashcore's AABB constructor orders reversed endpoints before the mapper receives them. The exclusive maximum must fit `int`, so a cell range cannot include cell `Integer.MAX_VALUE`, although point lookup can return that cell. Chunk ranges can include it only if their exclusive chunk maximum fits. Each returned range dimension is also limited to `Integer.MAX_VALUE`, so Ashgrid 1.2.0 dimension and empty checks cannot overflow. Bound the total cell count with checked arithmetic and caller-owned limits before allocation or iteration.
+AABB mapping treats the normalized maximum as excluded and returns half-open integer ranges. This differs from geometric contact tests that include the box boundary. Zero extent in any axis makes a cell range empty; chunk ranges use only XZ and ignore Y extent. Ashcore's AABB constructor rejects reversed endpoints before the mapper receives them. The exclusive maximum must fit `int`, so a cell range cannot include cell `Integer.MAX_VALUE`, although point lookup can return that cell. Chunk ranges can include it only if their exclusive chunk maximum fits. Each returned range dimension is also limited to `Integer.MAX_VALUE`. Bound the total cell count with checked arithmetic and caller-owned limits before allocation or iteration.
 
 Finite values alone do not guarantee useful spatial resolution. For example, at world origin X = `2^54` with unit cells, the centers of cells 0 and 1 round to the same point. Subtracting the origin later cannot recover the lost bit. Use origins near the work area, and choose cell sizes large enough to remain distinguishable. No arbitrary-large-world or universal center round-trip guarantee is made.
 
@@ -200,6 +232,8 @@ The supported surface includes public types and members under `nsk.nu.ashspace.a
 Version **2.0.0-SNAPSHOT** reserves a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must migrate before adopting a release. Existing `1.0.0` artifacts must not be replaced with this code.
 
 Frame removal, frozen graphs and the frame-attached mapper are additive APIs in the same unpublished snapshot. Common-ancestor composition preserves transform direction and order but can change floating-point rounding relative to the previous root-based calculation. No existing constructor, method or return type was changed. Snapshot mutability is explicit through `isSnapshot()`; snapshot instances reject `define`, `remove` and `removeSubtree`.
+
+Capsule and OBB conversions are additive APIs in `2.0.0-SNAPSHOT`. They require Ashcore `1.2.0-SNAPSHOT`, which owns `OrientedBox`; do not force an older Ashcore onto the runtime classpath. No existing method or conservative mapping behavior changes. The complete Ashspace suite checks this dependency together with Ashgrid `1.3.0-SNAPSHOT`; artifact hashes are recorded in [VERIFICATION.md](VERIFICATION.md).
 
 Ashtrace and Ashnav consumers should test the corrected boundary examples, confirm their chunk layout is standard XZ, handle the explicit validation failures and keep a single stable frame configuration for each query. No consumer or lower-layer checkout is changed by this correction. There are no guaranteed serialized formats or cross-release bitwise result streams.
 

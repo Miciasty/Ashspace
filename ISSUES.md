@@ -336,26 +336,33 @@ Użytkownik zlecił uzupełnienie backlogu w granicach rewizji 2.0. Nowa propozy
 
 ## SPACE-012 — Zachować kształt prymitywów przy konwersjach ramek
 
-**Status:** OTWARTE  
-**Priorytet:** P2  
-**Dowód:** DECYZJA, oparta na inspekcji istniejących adapterów  
+**Status:** GOTOWE
+
+**Priorytet:** P2
+
+**Dowód:** testy i inspekcja — [weryfikacja 2026-09-10](VERIFICATION.md#2026-09-10--shape-preserving-conversions-space-012)
+
 **Kontrakt:** sekcje 2, 3.3, 4.2–4.5, 5, 7
 
 **Gdzie:** [GeometryTransforms3.java](src/main/java/nsk/nu/ashspace/api/geometry/GeometryTransforms3.java), [SpaceConverter3.java](src/main/java/nsk/nu/ashspace/api/space/SpaceConverter3.java), [RigidTransform3.java](src/main/java/nsk/nu/ashspace/api/transform/RigidTransform3.java), testy geometry/space i [README.md](README.md).
 
-**Stan i znaczenie:** GeometryTransforms3 przekształca promienie, odcinki i sfery. axisAlignedBox zwraca obwiednię ośmiu przekształconych narożników i jawnie dopuszcza dodatkową przestrzeń. Ashcore ma kapsułę, ale nie ma jeszcze typu OBB. Obecna konwersja AABB działa zgodnie z kontraktem.
+**Stan podczas przeglądu:** GeometryTransforms3 przekształcał promienie, odcinki i sfery. axisAlignedBox zwraca obwiednię ośmiu przekształconych narożników i jawnie dopuszcza dodatkową przestrzeń. W chwili tworzenia propozycji Ashcore miał kapsułę, ale nie miał jeszcze typu OBB. Konwersja AABB do konserwatywnej obwiedni działała zgodnie z kontraktem.
 
 **Praca do wykonania:** Rozważyć małe konwersje zachowujące kształt: kapsułę przez przekształcenie obu końców z zachowaniem promienia oraz, po ustaleniu CORE-011, AABB→OBB i OBB→OBB przez sztywny obrót i przesunięcie. Użyć geometrii Ashcore i istniejącej algebry RigidTransform3. W nazwach i opisie rozdzielić zachowany kształt od konserwatywnej obwiedni. Skala i ścinanie pozostają poza modelem.
 
 Nie dodawać własnych testów przecięć OBB, typu OBB należącego do wyższej warstwy, indeksu kolizji, zegara animacji ani podparcia postaci. Przeliczenie punktu ze starego ustawienia do nowego jest już możliwe przez złożenie transformacji; nie stanowi brakującego kontrolera ruchomego pokładu.
 
+**Realizacja 2026-09-10:** `GeometryTransforms3` i `SpaceConverter3` udostępniają `capsule` oraz przeciążenia `orientedBox` dla AABB i OBB. Kapsuła zachowuje promień, OBB zachowuje półwymiary; AABB otrzymuje środek i półwymiary z granic. Składanie orientacji stosuje najpierw obrót bryły, potem obrót konwersji. Użyto istniejącej algebry `RigidTransform3` i ustalonego `OrientedBox` z Ashcore **1.2.0-SNAPSHOT**, po zamknięciu CORE-011. Zależność Ashgrid pozostaje **1.3.0-SNAPSHOT**. Sumy obu faktycznie użytych JAR-ów zapisano w VERIFICATION.md.
+
+Zachowanie kształtu podlega zaokrągleniom double. Skrajnie mała półdługość może zaniknąć do zera; duże przesunięcie może zgubić małe różnice. Konwersje odrzucają nieskończone wyniki i niepoprawne granice, wspierają poprawne bryły zdegenerowane. Dotychczasowe `axisAlignedBox`, mapowanie siatki i umowa live/snapshot pozostają bez zmian. Nie dodano algorytmów przecięć; przykład punktu w obwiedni poza bryłą używa istniejącego zapytania Ashcore.
+
 **Warunki zamknięcia:**
 
-- [ ] Zapisano wspierane konwersje. Część OBB używa ustalonego API i zidentyfikowanego artefaktu Ashcore; konwersję kapsuły można rozstrzygnąć niezależnie.
-- [ ] Testy obejmują przesunięcie, obroty 45°/90°/180°, ramy zagnieżdżone, odwrotność oraz niepoprawne i zdegenerowane dane według kontraktu prymitywu.
-- [ ] Potwierdzono zachowanie promienia kapsuły, wymiarów OBB i punktów powierzchni w uzasadnionej tolerancji. Przykład odróżnia punkt w osiowej obwiedni od punktu w obróconej bryle.
-- [ ] Nowe operacje respektują istniejące zasady live/snapshot i spójności zapytania; nie deklarują migawki storage ani indeksu.
-- [ ] Istniejące axisAlignedBox i mapowanie do komórek zachowują konserwatywną semantykę. Opisano precyzję, koszty i zgodność; implementacja przechodzi testy oraz clean verify.
+- [x] Zapisano wspierane konwersje. Część OBB używa ustalonego API i zidentyfikowanego artefaktu Ashcore; konwersję kapsuły można rozstrzygnąć niezależnie.
+- [x] Testy obejmują przesunięcie, obroty 45°/90°/180°, ramy zagnieżdżone, odwrotność oraz niepoprawne i zdegenerowane dane według kontraktu prymitywu.
+- [x] Potwierdzono zachowanie promienia kapsuły, wymiarów OBB i punktów powierzchni w uzasadnionej tolerancji. Przykład odróżnia punkt w osiowej obwiedni od punktu w obróconej bryle.
+- [x] Nowe operacje respektują istniejące zasady live/snapshot i spójności zapytania; nie deklarują migawki storage ani indeksu.
+- [x] Istniejące axisAlignedBox i mapowanie do komórek zachowują konserwatywną semantykę. Opisano precyzję, koszty i zgodność; implementacja przechodzi testy oraz clean verify.
 
 **Powiązania:** [CORE-011](../Ashcore/ISSUES.md#core-011), [SPACE-002](#space-002), [SPACE-004](#space-004), [SPACE-008](#space-008), [TRACE-012](../Ashtrace/ISSUES.md#trace-012). Propozycja P2 nie otwiera ponownie zamkniętych zadań. Jej odrzucenie zapisać jako NIE DOTYCZY z uzasadnieniem; dopisanie planu nie oznacza GOTOWE.
 
@@ -395,8 +402,18 @@ Testy konsumentów obejmują współpracę bibliotek, m.in. frame-aware tracing 
 
 ### Przegląd zakresu kolizji 2026-09-10
 
-**Stan bieżącego przeglądu:** SPACE-001–SPACE-011 zachowują dotychczasowe statusy. SPACE-012 jest otwartą propozycją P2, nie błędem obecnego axisAlignedBox ani warunkiem wydania aktualnego zakresu.
+**Historyczny stan przeglądu:** SPACE-001–SPACE-011 zachowały dotychczasowe statusy. SPACE-012 było otwartą propozycją P2, nie błędem obecnego axisAlignedBox ani warunkiem wydania ówczesnego zakresu.
 
 | Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
 | --- | --- | --- | --- | --- |
 | 2026-09-10 / bez operacji Git, zgodnie z instrukcją użytkownika | SPACE-012: OTWARTE, P2 / DECYZJA | Konwersje zachowujące kształt kapsuły i przyszłego OBB; wyłącznie backlog | Inspekcja źródeł; kontrola struktury, odnośników i zachowania wcześniejszej treści. Testów bibliotek i buildów nie uruchamiano | Rozstrzygnąć konwersję kapsuły; część OBB zależy od CORE-011. |
+
+### Konwersje zachowujące kształt — 2026-09-10
+
+**SPACE-012: GOTOWE.** Praca wyłącznie w Ashspace, gałąź `fix/ashspace-shape-conversions-20260910`, checkpoint `93c28e3` zapisujący zastany backlog, kod wyjściowy `f652173`. Wersja pozostaje nieopublikowanym `2.0.0-SNAPSHOT`. SPACE-001–SPACE-011 zachowują zamknięte statusy.
+
+| Data / commit | ID i decyzja | Zmiana | Polecenie / test i rzeczywisty wynik | Pozostałe zależności / następny krok |
+| --- | --- | --- | --- | --- |
+| 2026-09-10 / commit zawierający ten wpis; checkpoint `93c28e3` | SPACE-012: GOTOWE | Konwersja kapsuły, AABB→OBB i OBB→OBB; Ashcore 1.2.0-SNAPSHOT; testy, przykłady, precyzja i zgodność; korekta nieaktualnego opisu odwróconych AABB | Baseline: 74 PASS. Nowe testy: 13 PASS. `clean verify dependency:tree`: 87 + 2 PASS, JDK 21/Maven 3.9.9. `javap -public`: 6 nowych metod, 0 usuniętych sygnatur. README skompilowane i uruchomione z JAR-a | W CI i u konsumentów dostarczyć wskazane artefakty Ashcore/Ashgrid; publikacja i zdalne CI niewykonywane. Adoptowanie API przez TRACE-012 należy do Ashtrace. |
+
+Nie było nieudanych testów ani buildów w tej sesji. Katalog nadrzędny nie jest repozytorium Git; operacje wykonano w Ashspace, a ostrzeżenie właściciela Git rozwiązano lokalnym dla polecenia `safe.directory`. Szczegóły testów, polecenia, ograniczenia i sumy artefaktów: [VERIFICATION.md](VERIFICATION.md#2026-09-10--shape-preserving-conversions-space-012).

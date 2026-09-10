@@ -36,6 +36,8 @@ class PackagedArtifactIT {
         try (JarFile jar = new JarFile(main.toFile())) {
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/GridSpaceMapper3.class"));
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/FrameGridSpaceMapper3.class"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/geometry/GeometryTransforms3.class"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/space/SpaceConverter3.class"));
             assertNotNull(jar.getEntry("nsk/nu/ashspace/implementation/grid/ChunkLocalIndexer.class"));
             assertNotNull(jar.getEntry("META-INF/LICENSE"));
             assertNotNull(jar.getEntry("META-INF/NOTICE"));
@@ -51,11 +53,15 @@ class PackagedArtifactIT {
         try (JarFile jar = new JarFile(sources.toFile())) {
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/GridSpaceMapper3.java"));
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/FrameGridSpaceMapper3.java"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/geometry/GeometryTransforms3.java"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/space/SpaceConverter3.java"));
         }
         try (JarFile jar = new JarFile(javadoc.toFile())) {
             assertNotNull(jar.getEntry("index.html"));
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/GridSpaceMapper3.html"));
             assertNotNull(jar.getEntry("nsk/nu/ashspace/api/grid/FrameGridSpaceMapper3.html"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/geometry/GeometryTransforms3.html"));
+            assertNotNull(jar.getEntry("nsk/nu/ashspace/api/space/SpaceConverter3.html"));
         }
     }
 
