@@ -45,6 +45,10 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 | [SPACE-004](#space-004) | P1 | AUDYT | Doprecyzować mutację ramek i konserwatywne obwiednie |
 | [SPACE-005](#space-005) | P1 | DECYZJA | Zachować zgodność publicznych typów i przykładów |
 | [SPACE-006](#space-006) | P1 | INSPEKCJA | Dostosować CI, pakowanie i dowody wydania |
+| [SPACE-007](#space-007) | P1 | ROZSZERZENIE | Usuwanie ramek i poddrzew |
+| [SPACE-008](#space-008) | P1 | ROZSZERZENIE | Niezmienny graf do kompletnych zapytań |
+| [SPACE-009](#space-009) | P1 | ROZSZERZENIE | Siatka związana z ruchomą ramką |
+| [SPACE-010](#space-010) | P1 | KOREKTA | Transformacje względem wspólnego przodka |
 
 <a id="space-001"></a>
 
@@ -215,6 +219,80 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 
 **Powiązania:** Wspólny wzorzec: [TEMPLATE-001](../Ashtemplate/ISSUES.md#template-001) i [TEMPLATE-002](../Ashtemplate/ISSUES.md#template-002). Tę korektę można wykonać niezależnie od napraw algorytmów. Istniejącego numeru wydania nie nadpisuj innym artefaktem.
 
+<a id="space-007"></a>
+
+## SPACE-007 — Usuwanie ramek i poddrzew
+
+**Status:** GOTOWE
+
+**Kontrakt:** sekcje 3.3, 4.2; rozszerzenie zlecone 2026-09-10 po ocenie kompletności.
+
+**Powód:** po usunięciu pojazdu z aplikacji nie było możliwości usunięcia odpowiadających mu ramek bez przebudowy całego grafu.
+
+**Realizacja:** `FrameGraph3.remove` usuwa wyłącznie istniejący liść. `removeSubtree` usuwa wskazaną ramkę i jej bieżących potomków, zwracając ich liczbę. Korzeń jest chroniony. Nieprawidłowe żądania nie zmieniają grafu. Kolejność ocalałych definicji pozostaje niezmieniona; ponowne użycie usuniętego ID dodaje definicję na końcu.
+
+- [x] Testy odrzucenia korzenia, braku ramki, null i liścia z dziećmi oraz niezmienności stanu po błędzie.
+- [x] Testy reparentingu, usuwania właściwego poddrzewa, pozostałych gałęzi i ponownego użycia ID.
+- [x] Test iteracyjnego usunięcia poddrzewa 2048 ramek.
+
+**Dowód:** `FrameGraph3LifecycleTest`, [VERIFICATION.md](VERIFICATION.md).
+
+<a id="space-008"></a>
+
+## SPACE-008 — Niezmienny graf do kompletnych zapytań
+
+**Status:** GOTOWE
+
+**Kontrakt:** sekcje 3.3, 4.1, 4.2; rozszerzenie zlecone 2026-09-10.
+
+**Powód:** kopia `frames()` zawierała dane, ale nie dawała gotowego grafu do wielu spójnych konwersji wykonywanych przez istniejące adaptery.
+
+**Realizacja:** `FrameGraph3.snapshot()` tworzy zamrożony graf tego samego typu, przyjmowany przez istniejące konwertery. `isSnapshot()` ujawnia jego stan. Wszystkie mutatory odrzucają operacje na kopii. Kopiowanie wymaga stabilnego źródła; późniejsze równoległe odczyty po bezpiecznym przekazaniu kopii nie wymagają blokowania grafu. Nie są obliczane ani buforowane transformacje do świata.
+
+- [x] Snapshot pozostaje poprawny po zmianie, reparentingu i usunięciu ramek źródła.
+- [x] Testy wszystkich mutatorów, niezmiennej mapy definicji, kolejności i kompatybilności istniejących adapterów.
+- [x] Równoległe odczyty oraz lokalne zapytanie przy nieprzedstawialnej transformacji wspólnej gałęzi do świata.
+
+**Dowód:** `FrameGraph3SnapshotTest`, `FrameGridSpaceMapper3ApiTest`, [VERIFICATION.md](VERIFICATION.md). Snapshot nie obejmuje magazynu voxeli ani indeksu śledzenia; konsument odpowiada za ich spójność.
+
+<a id="space-009"></a>
+
+## SPACE-009 — Siatka związana z ruchomą ramką
+
+**Status:** GOTOWE
+
+**Kontrakt:** sekcje 3.2, 3.3, 4.3; rozszerzenie zlecone 2026-09-10, bez zmiany właściciela magazynowania danych.
+
+**Powód:** istniejący `GridSpaceMapper3.localToCell` mapuje lokalny punkt do siatki świata. Siatka bloków wewnątrz obracającego się statku wymaga jawnego powiązania jej osi i początku z ramką statku.
+
+**Realizacja:** nowy `FrameGridSpaceMapper3` łączy graf, `gridFrame`, lokalny `gridOrigin`, rozmiar komórki i standardowy rozmiar chunka XZ. Mapuje punkty i AABB ze świata lub wskazanej ramki na indeksy oraz środki/narożniki komórek do świata lub wskazanej ramki. Zachowuje zasady floor, half-open i walidację istniejącego mappera. `snapshot()` zamraża konfigurację ramek adaptera.
+
+- [x] Obrót, przesunięcie, lokalny początek i rozmiar komórki; zgodność dróg cell/chunk/chunk-local.
+- [x] Współrzędne świata i innej ramki, granice ujemne i nextUp/nextDown, konserwatywne obwiednie.
+- [x] Ruch i usunięcie ramki, frozen/live, nieprawidłowe dane oraz odzyskiwanie środka komórki w innej ramce.
+- [x] Integracja z magazynem `HashSparseGrid3i` Ashgrid: nowa pozycja świata po ruchu/obrocie wskazuje ten sam zapisany blok.
+
+**Dowód:** `FrameGridSpaceMapper3ApiTest`, `MovingGridIntegrationTest`, przykład README skompilowany i uruchomiony z JAR-a przez `PackagedArtifactIT`.
+
+<a id="space-010"></a>
+
+## SPACE-010 — Transformacje względem wspólnego przodka
+
+**Status:** GOTOWE
+
+**Kontrakt:** sekcje 3.3, 4.3, 4.5; korekta zlecona 2026-09-10.
+
+**Reprodukcja:** dwa narzędzia o przesunięciach 1 i 2 względem statku przy przesunięciu świata `2^54` uzyskiwały zerową odległość względną. Lokalna konwersja mogła też zawieść przez przepełnienie wspólnej gałęzi, której wynik nie wymaga.
+
+**Realizacja:** graf ustala najbliższego wspólnego przodka przez relacje rodziców i głębokości. Składa wyłącznie transformacje na potrzebnych odcinkach poniżej tego przodka. Koszt wyszukania pozostaje O(hs + ht), dodatkowa pamięć żywa O(1); arytmetyka dotyczy tylko krawędzi ścieżki względnej. `rootFrom` zachowuje granice konwersji do świata. Kolejność i kierunek transformacji pozostają zgodne z API; ostatnie bity wyników mogą się zmienić.
+
+- [x] Odtworzenie obu problemów na poprzednim kodzie: 12 testów ramki, 1 porażka i 1 błąd wykonania.
+- [x] Poprawne lokalne wyniki przy ogromnej lub przepełniającej się wspólnej gałęzi.
+- [x] Testy różnych głębokości, nieprzemiennych obrotów, obu kierunków, reparentingu i snapshotów.
+- [x] Testy Ashtrace i Ashnav wykonane z nowym JAR-em zamiast zależności Ashspace 1.0.0; źródła obu bibliotek niezmienione.
+
+**Dowód:** `FrameGraph3ApiTest`, `FrameGridSpaceMapper3ApiTest`, [VERIFICATION.md](VERIFICATION.md). To ochrona lokalnych obliczeń; nie odzyskuje cyfr utraconych wcześniej w punkcie świata.
+
 ## Stan przekazania i dziennik sesji
 
 **Na 2026-09-09:** wszystkie zadania pozostają OTWARTE. Utworzono dokumentację; nie wprowadzono korekt kodu, nie wykonano buildów bibliotek ani publikacji. Nie uznawaj samego dodania ISSUES.md za realizację żadnego zadania.
@@ -240,3 +318,11 @@ Pracę wykonano wyłącznie w Ashspace, na gałęzi `fix/ashspace-contract-v2-20
 | 2026-09-10 / ten sam zestaw zmian | SPACE-005, SPACE-006: GOTOWE lokalnie | README i migracja 2.0.0-SNAPSHOT; release 21 i przypięte pluginy; Javadoc bez ukrywania błędów; test gotowego JAR, źródeł, dokumentacji i przykładu; CI obejmuje main i PR | JDK Adoptium 21.0.12.1+1, Maven 3.9.9; 54 testy + 2 testy artefaktów, 0 błędów/pominięć; actionlint 1.7.7 PASS; zależności z pustego izolowanego repo Maven Central | Publikacja do Packages/Central i zdalne wykonanie CI NIEZWERYFIKOWANE; konsumentów nie zmieniano; przed wydaniem właściciel sprawdza tag/wersję/destynacje |
 
 Pierwsze 31 istniejących testów przechodziło. Dodane regresje przed naprawą dały 6 porażek i 1 błąd wykonania w 39 testach; po korekcie wszystkie przeszły. Końcowe 56 testów obejmuje późniejsze rozszerzenia. Nie używano deploy jako testu ani lokalnego builda sąsiedniej biblioteki jako zamiennika opublikowanej zależności.
+
+### Uzupełnienie funkcjonalne 2026-09-10
+
+**SPACE-007–SPACE-010: GOTOWE.** Gałąź `feat/ashspace-frame-completeness-20260910`, checkpoint `8b4747c`, kod wyjściowy `79a66f3`. Zachowano wersję roboczą `2.0.0-SNAPSHOT`; nie publikowano artefaktów. Dodano usuwanie ramek, queryable snapshots, mapper siatki w ramce i obliczenia przez wspólnego przodka. Wszystkie stare publiczne sygnatury pozostają dostępne.
+
+`clean verify` Ashspace: **72 testy + 2 testy gotowych artefaktów, PASS**. Istniejące testy konsumentów z tym samym JAR-em: **Ashtrace 43, Ashnav 29, PASS**. Kopie źródeł uruchomiono pod `Ashspace/.verification/consumer-tests`; tylko ich skopiowane POM-y wskazywały roboczą zależność 2.0.0-SNAPSHOT. Sumy 63 oryginalnych plików źródłowych/testowych/POM pozostały niezmienione. Szczegóły i commity wejściowe: [VERIFICATION.md](VERIFICATION.md).
+
+Testy konsumentów obejmują współpracę bibliotek, m.in. frame-aware tracing i world-to-grid navigation. Nie wymagają osobnej aplikacji. Nie uruchamiano gry/pluginu, benchmarków ani publikacji. Snapshot dotyczy wyłącznie ramek; dane siatki i pozostałe indeksy nadal wymagają spójnego stanu po stronie aplikacji.

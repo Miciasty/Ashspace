@@ -45,20 +45,22 @@ The caller supplies the ship pose and keeps it stable during the complete query.
 
 ## 5. How it works
 
-1. `FrameGraph3` stores an acyclic parent chain of frames with `parentFromFrame` transforms.
+1. `FrameGraph3` stores an acyclic parent chain of frames with `parentFromFrame` transforms. It supports leaf/subtree removal and queryable frozen snapshots.
 2. `RigidTransform3` applies point/vector conversions and supports composition/inversion.
 3. `SpaceConverter3` resolves transforms between any two connected frames and applies them to points and Ashcore geometry.
 4. `GridSpaceMapper3` converts world/local points and AABBs to Ashgrid indices using explicit `cellSize`, `worldOrigin`, and a square XZ chunk size obtained from `ChunkScheme`.
+   `FrameGridSpaceMapper3` attaches a grid to a frame, so its origin and axes move with that frame.
 5. Values returned by conversions are immutable. Frame-based conversions read the current graph each time and allocate intermediate values along the parent chains.
 
 > [!NOTE]
-> Local rotated AABBs are converted through world-space enclosing AABBs, so range results are conservative.
-`FrameGraph3` is mutable and not thread-safe. A conservative range can contain cells that the actual rotated box never touches; it is not an exact shape test or a minimal cell set.
+> Rotated AABBs are enclosed in the destination grid frame before range mapping, so range results are conservative.
+New `FrameGraph3` instances are mutable and not thread-safe. A graph returned by `snapshot()` is frozen and supports concurrent reads after safe publication. A conservative range can contain cells that the actual rotated box never touches; it is not an exact shape test or a minimal cell set.
 
 ## 6. Big-O for operations
 
 Definitions:
 - `h`: frame depth from node to root; `hs` and `ht` are the source and target depths.
+- `d`: number of edges from both frames to their nearest common ancestor.
 - `n`: number of defined frames. Hash-map lookups are assumed to take constant expected time.
 
 | Operation | Complexity | Notes |
@@ -66,15 +68,19 @@ Definitions:
 | `RigidTransform3.transformPoint` / `transformVector` | `O(1)` | Fixed-size math. |
 | `RigidTransform3.then` / `inverse` | `O(1)` | Fixed quaternion/vector operations. |
 | `FrameGraph3.define` | `O(h)` | Parent-chain walk for cycle safety. |
-| `FrameGraph3.transform(source, target)` | `O(hs + ht)` | Two root walks; identical existing frames take `O(1)`. |
+| `FrameGraph3.transform(source, target)` | `O(hs + ht)` | Inspects parent links; composes only the `d` edges below the common ancestor. Identical existing frames take `O(1)`. |
 | `FrameGraph3.frames()` | `O(n)` | Copies definitions in first-definition order; `O(n)` additional memory. |
+| `FrameGraph3.snapshot()` | `O(n)` | Copies definitions into a frozen graph; `O(n)` additional memory. On a snapshot, returns itself in `O(1)`. |
+| `FrameGraph3.remove(frame)` | `O(n)` | Checks that the frame is a non-root leaf; `O(1)` additional memory. |
+| `FrameGraph3.removeSubtree(frame)` | `O(n)` | Builds child lists and removes descendants iteratively; `O(n)` additional memory. |
 | `SpaceConverter3.point/vector/ray/...` | `O(h)` | Includes frame transform lookup. |
 | `GridSpaceMapper3.worldToCell/worldToChunk/worldToChunkLocal` | `O(1)` | Constant-time floor/index math. |
 | `GridSpaceMapper3.worldAabbToCells` | `O(1)` | Fixed number of scalar ops. |
 | `GridSpaceMapper3.worldAabbToChunks` | `O(1)` | Fixed number of scalar ops + chunk projection. |
+| `FrameGridSpaceMapper3` point/center/range conversion | `O(hs + ht)` | One frame conversion plus fixed-size mapping; `O(1)` live additional memory. |
 | `GeometryTransforms3.axisAlignedBox` | `O(1)` | 8 transformed corners. |
 
-Transform walks need `O(1)` live additional memory and create `O(hs + ht)` temporary values in total. Other fixed-size conversions use `O(1)` additional memory. There is no transform cache: doubling the chain depth roughly doubles the number of compositions per query. These are operation counts, not latency measurements or an allocation-free guarantee. No benchmark claim is made.
+Transform walks need `O(1)` live additional memory and create `O(d)` temporary transform values plus constant overhead. `rootFrom` composes all `h` parent edges. There is no transform cache: deeper chains require more parent-link inspection, while nearby frames under a deep common ancestor still need only their relative edges composed. These are operation counts, not latency measurements or an allocation-free guarantee. No benchmark claim is made.
 
 ## 7. Core terms
 
@@ -109,9 +115,11 @@ Minimal usage example:
 import nsk.nu.ashcore.api.math.Vector3;
 import nsk.nu.ashcore.api.math.Quaternion;
 import nsk.nu.ashgrid.implementation.grid.indexing.SquareXZChunkScheme;
+import nsk.nu.ashgrid.api.grid.indexing.CellIndex3;
 import nsk.nu.ashspace.api.frame.FrameGraph3;
 import nsk.nu.ashspace.api.frame.FrameId;
 import nsk.nu.ashspace.api.grid.GridSpaceMapper3;
+import nsk.nu.ashspace.api.grid.FrameGridSpaceMapper3;
 import nsk.nu.ashspace.api.space.SpaceConverter3;
 import nsk.nu.ashspace.api.transform.RigidTransform3;
 
@@ -136,6 +144,16 @@ public final class AshspaceQuickStart {
         System.out.println("world=" + worldPoint);
         System.out.println("cell=" + mapper.worldToCell(worldPoint));
         System.out.println("chunkAddress=" + mapper.worldToChunkAddress(worldPoint));
+
+        FrameGraph3 queryFrames = frames.snapshot();
+        FrameGridSpaceMapper3 shipGrid = new FrameGridSpaceMapper3(
+                queryFrames, ship, 0.5, Vector3.ZERO, new SquareXZChunkScheme(16)
+        );
+        CellIndex3 shipCell = new CellIndex3(1, 0, 1);
+        Vector3 shipCellInWorld = shipGrid.cellCenter(shipCell);
+        System.out.println("shipCell=" + shipGrid.worldToCell(shipCellInWorld));
+        frames.remove(ship);
+        System.out.println("snapshotShipCell=" + shipGrid.worldToCell(shipCellInWorld));
     }
 }
 ```
@@ -145,6 +163,10 @@ public final class AshspaceQuickStart {
 
 The ship rotates 90 degrees about Y, then moves to `(10, 0, -4)` in world units. Ashcore's axis-angle method takes **radians**. The grid has half-unit cells: this is a mapping parameter, not scale applied to the ship. Chunk size `16` means 16 cells along X and Z, or 8 world units with this cell size. Chunk-local Y remains the global cell Y.
 
+The first mapper describes a world-aligned grid. `shipGrid` describes the ship's own cells: a world point is converted into the ship frame before indexing. Its `gridOrigin` and `cellSize` are measured in that frame. `cellCenter(cell)` returns a world point; `cellCenter(cell, targetFrame)` returns it in another frame. Likewise, `localToCell(sourceFrame, point)` converts directly between the source and grid frames. This avoids unnecessary world-coordinate rounding for tools on the same vehicle.
+
+The example uses one graph snapshot for a complete query. Removing the ship from the live graph afterward leaves that snapshot usable; both `shipCell` lines print `CellIndex3[x=1, y=0, z=1]`. A mapper constructed with the live graph observes later motion and rejects queries referencing a removed frame. `shipGrid.snapshot()` freezes that frame-attached mapper's frame state. Grid storage belongs to Ashgrid and is not copied by either snapshot operation.
+
 ## 9. Coordinates, state and numerical limits
 
 Coordinates are right-handed with Y up. `parentFromFrame` converts child coordinates into parent coordinates. `a.then(b)` applies `a` first, then `b`. A point is rotated and translated; a vector or direction is only rotated, retaining its length within rounding. No scale or shear is supported.
@@ -153,7 +175,7 @@ Coordinates are right-handed with Y up. `parentFromFrame` converts child coordin
 
 Cell lookup evaluates `floor((world - worldOrigin) / cellSize)` with ordinary rounded double subtraction and division, matching `VoxelSpace` for finite, representable cell indices. With unit cells at zero, `-0.2` maps to `-1`. No epsilon moves a point across a cell boundary. Even a mathematically exact decimal boundary can round to one side: membership is defined by the computed quotient.
 
-The mapper supports only zero-based square XZ chunks, using floor division of integer cell indices. It captures the supplied scheme's positive `chunkSize()` at construction. All mapping routes use this one size; custom point, range, bounds and neighborhood methods on the scheme are not consulted. Changing the scheme later does not change that captured size. Shifted, rotated or irregular chunk layouts require another adapter. `worldOrigin` is the grid origin in world units, not a separate chunk offset.
+Both mappers support only zero-based square XZ chunks within the grid's coordinate frame, using floor division of integer cell indices. They capture the supplied scheme's positive `chunkSize()` at construction. All mapping routes use this one size; custom point, range, bounds and neighborhood methods on the scheme are not consulted. Changing the scheme later does not change that captured size. `GridSpaceMapper3.worldOrigin` locates the grid in world units; `FrameGridSpaceMapper3.gridOrigin` locates it in grid-frame units. The attached frame can translate and rotate the entire grid, including its chunks. Irregular chunks or an independent chunk layout within the grid are outside this model.
 
 `cellSize` may be any positive finite double, including subnormal values. Inputs and intermediate/output coordinates must be finite; all point-mapping routes require all three floored cell coordinates to fit a signed 32-bit `int`. Tiny sizes can overflow the division, and subtraction can overflow for opposite large coordinates. Those cases are rejected. Underflow and other finite rounding can still erase information.
 
@@ -163,7 +185,11 @@ Finite values alone do not guarantee useful spatial resolution. For example, at 
 
 Tests cover center round trips for sizes `0.1`, `0.3`, `0.5`, `1`, `2`, origins `(0,0,0)` and `(10,-7,-4)`, and representative signed indices from `Integer.MIN_VALUE` to `Integer.MAX_VALUE`. Exact integer results are asserted without tolerance. Transform examples at moderate magnitudes use absolute coordinate tolerances from `1e-12` to `1e-9`; these are test tolerances, not global error bounds. Large translations and long composition chains can require a different error budget.
 
-Keep the frame graph unchanged throughout the entire logical query, including conversion, tracing and any later grid lookup that must describe the same pose. Synchronization is the caller's responsibility and must include writers. `SpaceConverter3` retains the live graph. `frame()`, `frames()` and returned transforms are immutable snapshots and remain unchanged after updates. Redefinition changes subsequent queries; reparenting keeps children attached and interprets the supplied pose relative to the new parent, without preserving the old world pose. Failed definitions leave the graph unchanged. Every referenced frame must exist, even for conversion to itself.
+For a mutable graph, keep it unchanged throughout the entire logical query, including conversion, tracing and any later grid lookup that must describe the same pose. Synchronization is the caller's responsibility and must include writers. Alternatively, obtain `FrameGraph3 snapshot = frames.snapshot()` while the source is stable and pass that same frozen graph to every adapter involved. Snapshot creation copies definitions without computing world transforms. Subsequent reads need no graph locking after safe publication; all graph mutations on a snapshot throw `UnsupportedOperationException`. Taking a snapshot of a snapshot returns the same instance.
+
+`SpaceConverter3` and both grid mappers accept the frozen graph through their existing `FrameGraph3` parameters. `frame()`, `frames()` and returned transforms also remain unchanged after live updates. Redefinition changes later live queries; reparenting keeps children attached and interprets the supplied pose relative to the new parent, without preserving the old world pose. `remove(id)` removes only a non-root leaf and rejects a frame with children. `removeSubtree(id)` removes that frame and its current descendants and returns their count. Both reject the root, unknown ids and null. Rejected operations leave state unchanged. Surviving frames retain their order; defining a removed id appends a new definition at the end. Every frame referenced by a conversion must exist, even for conversion to itself.
+
+Relative transformations find the nearest common ancestor and compose only the edges below it. For example, tool frames one unit apart remain one unit apart even when their shared ship has world translation `2^54`. This also permits relative queries when the shared ancestor's accumulated world pose would overflow. `rootFrom` and actual world conversions still have the earlier numerical limits, and lost precision in an already computed world point cannot be recovered.
 
 Repeatability requires equal numeric inputs, frame definitions, configuration, dependency versions and a stable graph during queries. Snapshot iteration follows first-definition order; updating a frame preserves its position. Arithmetic results do not depend on the order in which an otherwise identical valid graph was defined. The guarantee covers repeated queries in the same runtime environment. Bitwise agreement across operating systems/JDKs or library releases is not promised; this change was tested on the environment recorded in [VERIFICATION.md](VERIFICATION.md).
 
@@ -173,11 +199,15 @@ The supported surface includes public types and members under `nsk.nu.ashspace.a
 
 Version **2.0.0-SNAPSHOT** reserves a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must migrate before adopting a release. Existing `1.0.0` artifacts must not be replaced with this code.
 
+Frame removal, frozen graphs and the frame-attached mapper are additive APIs in the same unpublished snapshot. Common-ancestor composition preserves transform direction and order but can change floating-point rounding relative to the previous root-based calculation. No existing constructor, method or return type was changed. Snapshot mutability is explicit through `isSnapshot()`; snapshot instances reject `define`, `remove` and `removeSubtree`.
+
 Ashtrace and Ashnav consumers should test the corrected boundary examples, confirm their chunk layout is standard XZ, handle the explicit validation failures and keep a single stable frame configuration for each query. No consumer or lower-layer checkout is changed by this correction. There are no guaranteed serialized formats or cross-release bitwise result streams.
 
 ## 11. Verification and publication
 
 Run `mvn -B clean verify` with tests enabled. The build compiles with a pinned compiler plugin and `release=21`, fails on Javadoc errors, packages main/sources/Javadoc JARs, checks the required contents and compiles/runs the Java quick start against the packaged JAR and its two production dependencies. Ashspace has no SPI providers to register. CI runs this gate for pushes on all branches (including the confirmed default `main`) and all pull requests, then uploads the three exact artifact filenames without renaming the main JAR.
+
+Frame completion was also checked against the existing Ashtrace and Ashnav test suites in isolated copies, with their Ashspace dependency set to this snapshot. All 43 Ashtrace and 29 Ashnav tests passed; the original consumer sources and POMs were unchanged. These suites include frame-aware tracing and world-to-grid navigation integration. They exercise cooperating library APIs without requiring a separate engine or plugin application. See [VERIFICATION.md](VERIFICATION.md) for the exact source revisions, commands and JAR identity.
 
 The `publish.yml` workflow targets **GitHub Packages**, after verification and a `v<version>` tag/POM match check. Manual runs must select a release tag, and snapshots are rejected. A GitHub Release is the trigger, not evidence that JAR assets were attached to that release; release assets are not currently uploaded by this workflow. The optional `central` profile remains the separate signing/Maven Central publishing route (`mvn -B -Pcentral deploy` with the owner's configured credentials). That is a publication command and must not be used as a verification check.
 

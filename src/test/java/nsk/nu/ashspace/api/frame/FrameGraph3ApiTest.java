@@ -198,6 +198,69 @@ class FrameGraph3ApiTest {
         assertEquals(List.of(second.root(), b, a), List.copyOf(second.frames().keySet()));
     }
 
+    @Test
+    void nearby_frames_preserve_their_offset_far_from_the_world_origin() {
+        // GIVEN
+        FrameGraph3 graph = FrameGraph3.worldRoot();
+        FrameId ship = new FrameId("ship");
+        FrameId a = new FrameId("a");
+        FrameId b = new FrameId("b");
+        graph.define(ship, graph.root(), RigidTransform3.translation(0x1.0p54, 0, 0));
+        graph.define(a, ship, RigidTransform3.translation(1, 0, 0));
+        graph.define(b, ship, RigidTransform3.translation(2, 0, 0));
+
+        // WHEN / THEN
+        assertVector(new Vector3(-1, 0, 0), graph.transform(a, b).transformPoint(Vector3.ZERO), 0.0);
+        assertVector(new Vector3(1, 0, 0), graph.transform(b, a).transformPoint(Vector3.ZERO), 0.0);
+        assertVector(new Vector3(1, 0, 0), graph.transform(a, ship).transformPoint(Vector3.ZERO), 0.0);
+    }
+
+    @Test
+    void relative_conversion_does_not_compose_overflowing_shared_ancestors() {
+        // GIVEN
+        FrameGraph3 graph = FrameGraph3.worldRoot();
+        FrameId sector = new FrameId("sector");
+        FrameId ship = new FrameId("ship");
+        FrameId tool = new FrameId("tool");
+        graph.define(sector, graph.root(), RigidTransform3.translation(Double.MAX_VALUE, 0, 0));
+        graph.define(ship, sector, RigidTransform3.translation(Double.MAX_VALUE, 0, 0));
+        graph.define(tool, ship, RigidTransform3.translation(3, 4, 5));
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> graph.rootFrom(ship));
+        assertVector(new Vector3(3, 4, 5), graph.transform(tool, ship).transformPoint(Vector3.ZERO), 0.0);
+        assertVector(new Vector3(-3, -4, -5), graph.transform(ship, tool).transformPoint(Vector3.ZERO), 0.0);
+    }
+
+    @Test
+    void unequal_depth_rotated_branches_match_conversion_in_the_common_parent() {
+        // GIVEN
+        FrameGraph3 graph = FrameGraph3.worldRoot();
+        FrameId common = new FrameId("common");
+        FrameId a = new FrameId("a");
+        FrameId child = new FrameId("child");
+        FrameId b = new FrameId("b");
+        RigidTransform3 parentFromA = new RigidTransform3(
+                Quaternion.fromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2), new Vector3(4, 0, 0));
+        RigidTransform3 aFromChild = RigidTransform3.translation(1, 2, 3);
+        RigidTransform3 parentFromB = new RigidTransform3(
+                Quaternion.fromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2), new Vector3(0, 3, 0));
+        graph.define(common, graph.root(), RigidTransform3.translation(0x1.0p54, -0x1.0p54, 0));
+        graph.define(a, common, parentFromA);
+        graph.define(child, a, aFromChild);
+        graph.define(b, common, parentFromB);
+        Vector3 point = new Vector3(2, -1, 5);
+        Vector3 expected = parentFromB.inverse().transformPoint(parentFromA.transformPoint(aFromChild.transformPoint(point)));
+
+        // WHEN / THEN
+        assertVector(expected, graph.transform(child, b).transformPoint(point), 1e-12);
+        assertVector(point, graph.transform(b, child).transformPoint(expected), 1e-12);
+        assertVector(expected, graph.snapshot().transform(child, b).transformPoint(point), 1e-12);
+        graph.define(a, graph.root(), parentFromA);
+        graph.define(b, graph.root(), parentFromB);
+        assertVector(expected, graph.transform(child, b).transformPoint(point), 1e-12);
+    }
+
     private static void assertVector(Vector3 expected, Vector3 actual, double eps) {
         assertEquals(expected.x(), actual.x(), eps);
         assertEquals(expected.y(), actual.y(), eps);

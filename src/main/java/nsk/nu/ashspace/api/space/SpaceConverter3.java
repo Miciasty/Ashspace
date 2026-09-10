@@ -12,9 +12,10 @@ import nsk.nu.ashspace.api.transform.RigidTransform3;
 
 /**
  * Frame-aware conversion utilities for points, vectors, and geometry.
- * <p>Retains the supplied mutable graph, without copying or locking it. The caller
- * must keep graph state stable throughout every complete query, including conversions
- * in other adapters. Each returned transform or geometry value is a snapshot.</p>
+ * <p>Retains the supplied graph, without copying or locking it. For a mutable graph,
+ * keep state stable throughout every complete query, including conversions in other
+ * adapters. Pass {@code frames.snapshot()} to freeze all definitions for repeated or
+ * concurrent queries. Each returned transform or geometry value is a snapshot.</p>
  */
 public final class SpaceConverter3 {
     private final FrameGraph3 frames;
@@ -25,7 +26,7 @@ public final class SpaceConverter3 {
     }
 
     /**
-     * Underlying frame graph.
+     * Underlying frame graph, live or frozen as supplied.
      */
     public FrameGraph3 frames() {
         return frames;

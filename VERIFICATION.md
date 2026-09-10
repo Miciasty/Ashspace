@@ -5,7 +5,7 @@
 Coordinates: `dev.nasaka.blackframe:ashspace:2.0.0-SNAPSHOT`.
 Scope: local corrections in Ashspace only. No release tag, upload, deployment or publication was performed.
 
-Work started on `fix/ashspace-contract-v2-20260910`, after checkpoint commit `b976a15` recorded the original source state and the previously untracked `ISSUES.md`. The implementation baseline was `3f1b910`. The correction commit containing this record can be identified with `git log -1 --format=%H -- VERIFICATION.md`; the artifact hashes below identify the binaries tested before that commit.
+Work started on `fix/ashspace-contract-v2-20260910`, after checkpoint commit `b976a15` recorded the original source state and the previously untracked `ISSUES.md`. The implementation baseline was `3f1b910`. Correction commit: `79a66f3`; the artifact hashes below identify the binaries tested before that commit. The later frame-completion work is recorded separately below.
 
 ### Environment and commands
 
@@ -102,3 +102,64 @@ Raw logs/reports are available locally in ignored `.verification/` and `target/s
 - **Consumers:** TRACE-002/TRACE-005 and NAV-003/NAV-007 need integration checks before their own dependency upgrades. No consumer test suite or checkout was modified or run here. Future dependency versions require new integration evidence.
 
 Environment obstacles were resolved locally: the default PATH exposed Java 8 and no usable Maven; restricted network access required approved downloads into Ashspace. Git's ownership warning was handled with a per-command `safe.directory` for Ashspace, without changing global configuration. An initial actionlint checksum read treated the downloaded response incorrectly; the published checksum was then read as a file and matched the downloaded ZIP before execution. No rejected checksum was bypassed, and no failed build was counted as passing.
+
+## 2026-09-10 — frame lifecycle, frozen queries and moving grids
+
+Branch: `feat/ashspace-frame-completeness-20260910`; checkpoint `8b4747c`; implementation baseline `79a66f3`. Coordinates remain `dev.nasaka.blackframe:ashspace:2.0.0-SNAPSHOT`. No published version or consumer checkout was changed. The four new tracked items are SPACE-007 through SPACE-010.
+
+### Implemented scope
+
+- `FrameGraph3.remove` removes a non-root leaf; `removeSubtree` removes a non-root frame and its current descendants. Rejected operations preserve state, surviving definitions retain insertion order, and subtree traversal is iterative.
+- `FrameGraph3.snapshot` returns a frozen `FrameGraph3`, directly usable by existing converters. Its nodes are immutable and its copied map is unmodifiable. All mutators reject changes. Creating the copy requires stable source state; the resulting graph supports concurrent reads after safe publication. No world transforms are eagerly evaluated.
+- `FrameGridSpaceMapper3` binds an explicitly identified frame to a grid origin, cell size and captured XZ chunk size. It provides world/other-frame point and range mapping, cell centers/corners in target frames, and frozen copies. Storage remains an Ashgrid responsibility.
+- Relative transforms use the nearest common ancestor. Parent-link inspection still costs O(hs + ht); only transforms below that ancestor are composed. This addresses loss of small relative offsets and avoidable overflow without claiming arbitrary precision for world coordinates.
+
+All previous public signatures remain available. Relative arithmetic can round differently; the version is still an unpublished major-version snapshot. Returning the same graph type for frozen copies preserves compatibility with existing consumer constructor signatures.
+
+### Tests and artifact verification
+
+Environment: the same Windows 11 amd64, Eclipse Adoptium JDK 21.0.12.1+1 and Maven 3.9.9 recorded above. No production dependency or workflow change was needed for this feature set.
+
+| Check | Result |
+| --- | --- |
+| New common-ancestor regressions against baseline | 12 frame tests, 1 failure and 1 error. An expected relative X offset of -1 became 0 at a shared world translation of `2^54`; a local query also failed from overflow in shared ancestors. |
+| Frame lifecycle and snapshot tests after implementation | Passed, including a 2048-frame removal and concurrent snapshot readers. |
+| Moving-grid API and storage integration | Passed, including translated/rotated frames, local origin, half-open boundaries, negative cells, snapshots, invalid inputs and grid-frame queries far from world origin. |
+| Final Ashspace `clean verify` | **72 tests + 2 packaged-artifact tests; 0 failures, 0 errors, 0 skipped.** Finished 2026-09-10 07:23:03 +02:00, exit 0. |
+| Existing Ashtrace suite with this Ashspace JAR | **43 tests passed**, 0 failures/errors/skips. Finished 07:24:39 +02:00, exit 0. |
+| Existing Ashnav suite with this Ashspace JAR | **29 tests passed**, 0 failures/errors/skips. Finished 07:25:00 +02:00, exit 0. |
+| Original consumer input checksums | **63 original POM/source/test/resource files unchanged** after the runs. |
+
+`MovingGridIntegrationTest` stores a block in Ashgrid 1.2.0 `HashSparseGrid3i`. After moving and rotating the vehicle, a new world point finds the same stored cell while a frozen mapper still resolves the old pose. The storage itself is not snapshotted. Existing consumer integration tests include `FrameTraceBroadPhaseIntegrationTest`, `FrameDynamicBroadPhaseIntegrationTest` and `SpaceMappedGridNavigator3IntegrationTest`; these are cooperating-library tests, not engine/plugin applications.
+
+The packaged-artifact test also checks the new mapper's class, source and generated Javadoc. It compiles and runs the updated complete README example against the packaged JAR, including snapshot creation, moving-grid lookup and removal from the live graph. Its final two lines are both `CellIndex3[x=1, y=0, z=1]` with the `shipCell=` and `snapshotShipCell=` labels.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| `target/ashspace-2.0.0-SNAPSHOT.jar` | `232b5524c201d881cfb9287906ca2eea74c2f3ee372dc0202ea1c568f46a019d` |
+| `target/ashspace-2.0.0-SNAPSHOT-sources.jar` | `0bdf9edb7c6bcee63c5a0c63fb7f23128a0b0d13874b6017831926753bad77f9` |
+| `target/ashspace-2.0.0-SNAPSHOT-javadoc.jar` | `13d289519d6e242d93a86bd0e4eb07c507428eef85762386f8d8218c064b88da` |
+
+The main JAR installed into the isolated Maven repository has the same SHA-256 as the tested `target` JAR. Surefire XML classpaths for both consumers identify that exact snapshot path plus Ashcore 1.0.1 and Ashgrid 1.2.0. No Ashspace 1.0.0 JAR appears in those classpaths.
+
+### Consumer sources and repeatable commands
+
+| Consumer | Original checkout revision | Test-copy adjustment |
+| --- | --- | --- |
+| Ashtrace 1.0.0 | `5c516fc4a891433ce10c920abaac3846fbee9926` | Only copied POM dependency `ashspace` changed from 1.0.0 to 2.0.0-SNAPSHOT. |
+| Ashnav 1.0.0 | `08e7d26a8be5e379e940166dd94307ef5aa2baaa` | Only copied POM dependency `ashspace` changed from 1.0.0 to 2.0.0-SNAPSHOT. |
+
+The existing `src` trees and POM files were copied into `.verification/consumer-tests/Ashtrace` and `.verification/consumer-tests/Ashnav`. Their test sources were not modified. `.verification/consumer-tests/input-manifest.json` records original per-file SHA-256 values and revisions. All copies, targets, logs and Maven metadata are inside Ashspace. The original consumer repositories were read only.
+
+Commands ran from Ashspace with `JAVA_HOME` pointing to the local JDK listed above and the local Maven 3.9.9 executable:
+
+```text
+mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=.verification/repository clean verify
+mvn -B -ntp -s .verification/settings.xml -Dmaven.repo.local=.verification/repository org.apache.maven.plugins:maven-install-plugin:3.1.3:install-file -Dfile=target/ashspace-2.0.0-SNAPSHOT.jar -DpomFile=pom.xml
+mvn -B -ntp -s .verification/settings.xml -Dmaven.repo.local=G:/Github/Blackframe/Ashspace/.verification/repository -f .verification/consumer-tests/Ashtrace/pom.xml clean test
+mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=G:/Github/Blackframe/Ashspace/.verification/repository -f .verification/consumer-tests/Ashnav/pom.xml clean test
+```
+
+`install-file` wrote only to the isolated repository under Ashspace; it did not publish or overwrite a released coordinate. The initial offline consumer attempts stopped before running tests because their default clean plugin 3.2.0 was not cached. An online Ashtrace run fetched the missing build dependencies, after which Ashnav completed offline. Logs are retained as `.verification/frame-completion-*.log` and `.verification/consumer-tests/*-tests*.log`.
+
+This verifies the existing consumer suites against the current snapshot and selected dependency artifacts. It does not claim complete coverage of every consumer behavior, separate application validation, benchmark evidence, snapshotting of external storage/indexes, cross-platform bitwise reproducibility, or successful publication. The release-owner checks described in the earlier section remain applicable.

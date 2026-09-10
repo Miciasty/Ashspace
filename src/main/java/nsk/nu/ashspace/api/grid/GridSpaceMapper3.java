@@ -27,7 +27,8 @@ import nsk.nu.ashspace.implementation.grid.ChunkLocalIndexer;
  * Finite arithmetic can still lose cell detail at large origins or tiny cell sizes.
  * A generated center is not guaranteed to map back when rounding loses that detail.</p>
  * <p>Local conversions require an unchanged frame graph throughout the caller's
- * complete query. This mapper is immutable; the graph is not thread-safe.</p>
+ * complete query, or a frozen graph snapshot. This mapper's mapping configuration is
+ * immutable. For a grid attached to a moving frame use {@link FrameGridSpaceMapper3}.</p>
  */
 public final class GridSpaceMapper3 {
     private final double cellSize;
