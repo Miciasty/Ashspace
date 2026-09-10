@@ -1,5 +1,7 @@
 # Ashspace verification record
 
+Latest correction: [SPACE-011 quotient underflow](#2026-09-10--grid-quotient-underflow-space-011).
+
 ## 2026-09-10 — contract revision 2.0 corrections
 
 Coordinates: `dev.nasaka.blackframe:ashspace:2.0.0-SNAPSHOT`.
@@ -163,3 +165,42 @@ mvn -B -ntp -o -s .verification/settings.xml -Dmaven.repo.local=G:/Github/Blackf
 `install-file` wrote only to the isolated repository under Ashspace; it did not publish or overwrite a released coordinate. The initial offline consumer attempts stopped before running tests because their default clean plugin 3.2.0 was not cached. An online Ashtrace run fetched the missing build dependencies, after which Ashnav completed offline. Logs are retained as `.verification/frame-completion-*.log` and `.verification/consumer-tests/*-tests*.log`.
 
 This verifies the existing consumer suites against the current snapshot and selected dependency artifacts. It does not claim complete coverage of every consumer behavior, separate application validation, benchmark evidence, snapshotting of external storage/indexes, cross-platform bitwise reproducibility, or successful publication. The release-owner checks described in the earlier section remain applicable.
+
+## 2026-09-10 — Grid quotient underflow (SPACE-011)
+
+Branch `fix/ashspace-grid-underflow-integration-20260910`, checkpoint `51f5340`, base `a4c813b`.
+The user expanded the Ashtrace integration task to permit fixing a blocking defect in its owner.
+Ashgrid and Ashcore remained unchanged. No push, publication or released artifact replacement.
+
+The unchanged `GridMappingIntegrationTest` failed against the corrected dependency set used by
+Ashtrace. At `cellSize=2`, origin zero, point X=`-Double.MIN_VALUE`, Ashgrid `VoxelSpace` returns
+cell -1, but Ashspace returned 0 because the quotient underflows to -0.0. This is an extreme-input
+integration defect, not evidence of a general failure in ordinary-scale queries. It can select
+the wrong cell or make a tiny nonempty range empty, so it was treated as a P1 contract blocker.
+
+`GridSpaceMapper3` now preserves the sign of a nonzero offset only when its quotient becomes zero.
+An internal signed `Double.MIN_VALUE` retains the correct side for floor/ceil selection; it is not
+exposed as an accurate distance or applied as a tolerance to ordinary inputs. Both frame and plain
+mappers, chunk addresses and range endpoints use the correction. Public signatures are unchanged.
+The POM now uses Ashcore 1.1.0-SNAPSHOT and Ashgrid 1.3.0-SNAPSHOT, matching the integration set.
+These dependencies must be provisioned before hosted builds; their remote availability is unverified.
+
+Two added regression tests plus the existing mapping suite ran before the fix: **7 tests, 3 failures**.
+After the fix, `clean verify dependency:tree` passed **74 tests + 2 packaged-artifact tests**, zero
+failures/errors/skips, on Adoptium JDK 21.0.12.1+1, Maven 3.9.16, Windows 11 amd64/UTF-8/pl_PL.
+The gate finished 2026-09-10 09:34:31 +02:00. Tests cover both signs, three cell sizes, two origins,
+the plain/frame mappers, cells, chunk addresses and half-open positive/negative/cross-zero ranges.
+Core/Grid binary hashes remain the ones recorded by Ashtrace's development dependency manifest.
+
+| Output | SHA-256 |
+| --- | --- |
+| Main JAR | `7f0e82346ee9c880a42e68eb24902439af7e9aba5ad7222b39930d9ab3cb0e94` |
+| Sources JAR | `fbd6e1c875b05547ddca370f502e8b4055d98461af00d6a7fb7e06150d6256a4` |
+| Javadoc JAR | `dda2b19966672abc379ee6f8fb352ee7affeee989a326e908cf8322c3f54a98c` |
+| Matching POM | `3aefb1556e47d99fd6a86b736d31006af4543dcf04e2972afe71ea83c645c073` |
+
+Verification used Ashtrace's isolated Maven repository and explicit settings. Logs are under
+`Ashtrace/.verification/ashspace-underflow-*.log`; final reports are in Ashspace `target`.
+One `clean` attempt could not remove a class owned by a different execution account. Only the
+resolved `Ashspace/target` directory was removed using its owner account; the next full gate passed.
+Consumer verification with the new JAR is recorded in [Ashtrace VERIFICATION.md](../Ashtrace/VERIFICATION.md).

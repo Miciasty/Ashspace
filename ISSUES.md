@@ -49,6 +49,7 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 | [SPACE-008](#space-008) | P1 | ROZSZERZENIE | Niezmienny graf do kompletnych zapytań |
 | [SPACE-009](#space-009) | P1 | ROZSZERZENIE | Siatka związana z ruchomą ramką |
 | [SPACE-010](#space-010) | P1 | KOREKTA | Transformacje względem wspólnego przodka |
+| [SPACE-011](#space-011) | P1 | KOREKTA | Zachować stronę granicy, gdy iloraz współrzędnej zanika do zera |
 
 <a id="space-001"></a>
 
@@ -292,6 +293,39 @@ Maven używa zależności rozstrzygniętych z POM i repozytoriów artefaktów. Z
 - [x] Testy Ashtrace i Ashnav wykonane z nowym JAR-em zamiast zależności Ashspace 1.0.0; źródła obu bibliotek niezmienione.
 
 **Dowód:** `FrameGraph3ApiTest`, `FrameGridSpaceMapper3ApiTest`, [VERIFICATION.md](VERIFICATION.md). To ochrona lokalnych obliczeń; nie odzyskuje cyfr utraconych wcześniej w punkcie świata.
+
+<a id="space-011"></a>
+
+## SPACE-011 — Zachować stronę granicy, gdy iloraz współrzędnej zanika do zera
+
+**Status:** GOTOWE
+
+**Reprodukcja:** uruchomiony z Ashtrace, niezmieniony `GridMappingIntegrationTest` nie przeszedł
+z Ashgrid 1.3.0-SNAPSHOT: przy `cellSize=2`, początku zero i współrzędnej `-Double.MIN_VALUE`
+`VoxelSpace` wybiera komórkę -1, a oba mappery Ashspace wybierały 0. Iloraz zaokrągla się do -0.0.
+Nowe testy odtworzyły także błędnie pusty zakres dla AABB od -Double.MIN_VALUE do zera.
+
+**Znaczenie i zakres zgody:** przypadek skrajny numerycznie, lecz narusza zgodność wyboru komórki
+i zakresu między warstwami. Uznano go za P1 blokujący zgodność integracji. Użytkownik rozszerzył
+początkowy zakres Ashtrace, zezwalając na naprawę istotnego błędu u właściciela. Utworzono gałąź
+`fix/ashspace-grid-underflow-integration-20260910` i checkpoint `51f5340` przed zmianami.
+
+**Realizacja:** wewnętrzny iloraz używany wyłącznie do floor/ceil zachowuje znak niezerowego offsetu,
+jeśli dzielenie zwróciło zero. Nie zmieniono zwykłych wartości ani publicznych sygnatur. Dotyczy
+punktów, adresów chunków oraz dodatnich/ujemnych końców zakresów przy zerze. Nie odtwarza pełnej
+odległości geometrycznej ani wszystkich zakresów nierozróżnialnych po zaokrągleniu.
+
+Zależności POM podniesiono do sprawdzonego zestawu Ashcore 1.1.0-SNAPSHOT / Ashgrid 1.3.0-SNAPSHOT;
+dawna bramka korzystała z Ashgrid 1.2.0 i nie wykrywała rozbieżności z nowszym VoxelSpace.
+Wersja Ashspace pozostaje rozwojowa 2.0.0-SNAPSHOT; wymaga dostarczenia tych zależności do CI.
+
+- [x] Reprodukcja: 7 testów mapowania, 3 porażki przed poprawką.
+- [x] Nowe testy punktów i zakresów przy zerze, trzech rozmiarów komórki i dwóch początków siatki.
+- [x] `clean verify dependency:tree`: 74 testy + 2 testy artefaktów, PASS na JDK 21.
+- [x] Dokumentacja opisuje zachowanie i aktualne wersje zależności.
+
+Testy konsumenta i niezmienione testy sąsiednich bibliotek są uruchamiane z nowym JAR-em w Ashtrace;
+dalsze dowody znajdują się w [VERIFICATION.md](VERIFICATION.md) oraz [raporcie Ashtrace](../Ashtrace/VERIFICATION.md).
 
 ## Stan przekazania i dziennik sesji
 

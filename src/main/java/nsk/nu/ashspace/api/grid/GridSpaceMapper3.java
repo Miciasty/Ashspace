@@ -18,6 +18,7 @@ import nsk.nu.ashspace.implementation.grid.ChunkLocalIndexer;
  *
  * <p>Cell lookup is {@code floor((world - worldOrigin) / cellSize)} on each axis,
  * using rounded double subtraction and division, without a boundary epsilon.
+ * If a nonzero quotient underflows to zero, its sign is preserved for floor/ceil cell selection.
  * Coordinates are right-handed with Y up; cellSize and worldOrigin use world units.</p>
  * <p>Only zero-based square XZ chunks are supported. The supplied scheme contributes
  * its positive chunkSize, captured at construction; its custom point, range and
@@ -278,10 +279,16 @@ public final class GridSpaceMapper3 {
         requireFinite(worldPoint.y(), "worldPoint.y");
         requireFinite(worldPoint.z(), "worldPoint.z");
         return requireFinite(new Vector3(
-                (worldPoint.x() - worldOrigin.x()) / cellSize,
-                (worldPoint.y() - worldOrigin.y()) / cellSize,
-                (worldPoint.z() - worldOrigin.z()) / cellSize
+                normalizedCoordinate(worldPoint.x() - worldOrigin.x()),
+                normalizedCoordinate(worldPoint.y() - worldOrigin.y()),
+                normalizedCoordinate(worldPoint.z() - worldOrigin.z())
         ), "normalized grid coordinate");
+    }
+
+    private double normalizedCoordinate(double offset) {
+        double value = offset / cellSize;
+        // Only floor/ceil use this internal value. Preserve the boundary side when division loses it.
+        return value == 0.0 && offset != 0.0 ? Math.copySign(Double.MIN_VALUE, offset) : value;
     }
 
     private static int floorToInt(double value, String name) {
