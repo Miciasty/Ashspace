@@ -1,0 +1,20 @@
+{
+  "name": "ashspace-wiki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ashspace documentation for GitHub Pages.",
+  "scripts": {
+    "build": "npm run build:css && npm run check && node build.mjs",
+    "build:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --minify",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --watch=always",
+    "dev": "node dev.mjs",
+    "preview": "node preview.mjs",
+    "check": "node check.mjs",
+    "check:examples": "node check-examples.mjs"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3",
+    "tailwindcss": "4.3.3"
+  },
+  "engines": { "node": ">=20" }
+}

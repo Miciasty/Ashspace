@@ -1,0 +1,80 @@
+/* Shared Prism roles for configuration, build files, and terminal commands.
+   Resolve aliases on each code block so theme previews and print inherit the
+   existing Java palette without introducing a second set of color values. */
+@layer components {
+  .syntax-code:not(.language-java) {
+    --syntax-plain: var(--java-plain);
+    --syntax-keyword: var(--java-keyword);
+    --syntax-type: var(--java-type);
+    --syntax-function: var(--java-function);
+    --syntax-string: var(--java-string);
+    --syntax-number: var(--java-number);
+    --syntax-annotation: var(--java-annotation);
+    --syntax-comment: var(--java-comment);
+    --syntax-operator: var(--java-operator);
+    --syntax-punctuation: var(--java-punctuation);
+    color: var(--syntax-plain);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.keyword, .boolean, .null) {
+    color: var(--syntax-keyword);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.tag, .class-name, .type) {
+    color: var(--syntax-type);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.function, .command, .builtin) {
+    color: var(--syntax-function);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.string, .char, .attr-value, .scalar, .regex, .url) {
+    color: var(--syntax-string);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.number, .constant, .symbol) {
+    color: var(--syntax-number);
+  }
+
+  .syntax-code:not(.language-java) .token:is(.property, .attr-name, .key, .atrule, .variable, .parameter, .option, .selector, .annotation) {
+    color: var(--syntax-annotation);
+  }
+
+  .syntax-code:not(.language-java) .token.operator {
+    color: var(--syntax-operator);
+  }
+
+  .syntax-code.language-output .token.property {
+    color: var(--syntax-type);
+  }
+
+  .syntax-code:not(.language-java) .token.punctuation {
+    color: var(--syntax-punctuation);
+  }
+
+  /* Quotes belong to attribute values; the equals sign stays punctuation. */
+  .syntax-code:not(.language-java) .token.attr-value > .token.punctuation:not(:first-child) {
+    color: var(--syntax-string);
+  }
+
+  /* Interpolated expressions keep their own tokens. Plain expression text
+     must not inherit the surrounding string's green color. */
+  .syntax-code:not(.language-java) .token.interpolation {
+    color: var(--syntax-plain);
+  }
+
+  .syntax-code:not(.language-java) .token.interpolation-punctuation {
+    color: var(--syntax-punctuation);
+  }
+
+  .syntax-code:not(.language-java) .token.annotation,
+  .syntax-code:not(.language-java) .token.annotation .token {
+    color: var(--syntax-annotation);
+  }
+
+  /* Comment contents never acquire executable-code colors from nested tokens. */
+  .syntax-code:not(.language-java) .token:is(.comment, .doc-comment, .shebang, .prolog, .doctype, .cdata),
+  .syntax-code:not(.language-java) .token:is(.comment, .doc-comment, .shebang, .prolog, .doctype, .cdata) .token {
+    color: var(--syntax-comment);
+  }
+}

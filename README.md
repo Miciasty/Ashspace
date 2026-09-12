@@ -4,6 +4,8 @@ Java library for coordinate frames, rigid transforms, and world/local-to-grid co
 
 Version **2.0.0** is available from [Maven Central](https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashspace/2.0.0).
 
+The illustrated [WIKI](wiki/README.md) includes guides, interactive diagrams, API reference, and a local preview. Its GitHub Pages workflow is prepared in this repository.
+
 > [!NOTE]
 > Ashspace handles coordinate frames, rigid transforms, and world/local conversion rules.  
 > Voxel storage/traversal belongs to Ashgrid, and pathfinding belongs to Ashnav.

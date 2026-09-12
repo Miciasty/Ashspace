@@ -1,0 +1,166 @@
+/* Prism Java tokens share one accessible palette across every WIKI.
+   Keep these values synchronized with content/java-palette.js in the template. */
+@layer base {
+  :root, .java-palette-dark {
+    --java-background: #17171d;
+    --java-plain: #d8d8e1;
+    --java-keyword: #c7a7ff;
+    --java-type: #78d8cf;
+    --java-function: #82b9ff;
+    --java-string: #aad58a;
+    --java-number: #e9bb78;
+    --java-annotation: #e6c878;
+    --java-comment: #9999aa;
+    --java-operator: #c3c3d0;
+    --java-punctuation: #adadbe;
+  }
+
+  html[data-theme="light"], .java-palette-light {
+    --java-background: #f0f0f3;
+    --java-plain: #353542;
+    --java-keyword: #7543a8;
+    --java-type: #006e68;
+    --java-function: #175ca5;
+    --java-string: #3f6f28;
+    --java-number: #88560c;
+    --java-annotation: #805713;
+    --java-comment: #666677;
+    --java-operator: #454553;
+    --java-punctuation: #555565;
+  }
+
+  @media print {
+    :root, html[data-theme="light"] {
+      --java-background: #f0f0f3;
+      --java-plain: #353542;
+      --java-keyword: #7543a8;
+      --java-type: #006e68;
+      --java-function: #175ca5;
+      --java-string: #3f6f28;
+      --java-number: #88560c;
+      --java-annotation: #805713;
+      --java-comment: #666677;
+      --java-operator: #454553;
+      --java-punctuation: #555565;
+    }
+  }
+}
+
+@layer components {
+  .code-block code.language-java {
+    color: var(--java-plain);
+  }
+
+  .language-java .token.namespace {
+    color: var(--java-plain);
+    opacity: 1;
+  }
+
+  .language-java .token.keyword,
+  .language-java .token.boolean {
+    color: var(--java-keyword);
+  }
+
+  .language-java .token.class-name {
+    color: var(--java-type);
+  }
+
+  .language-java .token.function {
+    color: var(--java-function);
+  }
+
+  .language-java .token.string,
+  .language-java .token.char {
+    color: var(--java-string);
+  }
+
+  .language-java .token.number,
+  .language-java .token.constant {
+    color: var(--java-number);
+  }
+
+  .language-java .token.operator {
+    color: var(--java-operator);
+  }
+
+  .language-java .token.punctuation {
+    color: var(--java-punctuation);
+  }
+
+  .language-java .token.annotation,
+  .language-java .token.annotation .token {
+    color: var(--java-annotation);
+  }
+
+  /* A comment remains a comment even if a grammar adds nested tokens. */
+  .language-java .token.comment,
+  .language-java .token.comment .token,
+  .language-java .token.doc-comment,
+  .language-java .token.doc-comment .token {
+    color: var(--java-comment);
+  }
+
+  .java-palette-panels {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin: 22px 0;
+  }
+
+  .java-palette-panel {
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--java-background);
+    color: var(--java-plain);
+  }
+
+  .article .java-palette-panel h3 {
+    margin: 0 0 4px;
+    color: var(--java-plain);
+    font-size: 15px;
+  }
+
+  .article .java-palette-panel p {
+    margin: 0 0 18px;
+    color: var(--java-comment);
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+
+  .java-palette-item {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+
+  .java-palette-item > span:last-child {
+    font-family: var(--mono);
+    font-size: 10px;
+  }
+
+  .java-palette-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: var(--java-swatch-color);
+  }
+
+  .java-swatch-plain { --java-swatch-color: var(--java-plain); }
+  .java-swatch-keyword { --java-swatch-color: var(--java-keyword); }
+  .java-swatch-type { --java-swatch-color: var(--java-type); }
+  .java-swatch-function { --java-swatch-color: var(--java-function); }
+  .java-swatch-string { --java-swatch-color: var(--java-string); }
+  .java-swatch-number { --java-swatch-color: var(--java-number); }
+  .java-swatch-annotation { --java-swatch-color: var(--java-annotation); }
+  .java-swatch-comment { --java-swatch-color: var(--java-comment); }
+  .java-swatch-operator { --java-swatch-color: var(--java-operator); }
+  .java-swatch-punctuation { --java-swatch-color: var(--java-punctuation); }
+
+  @media (width <= 680px) {
+    .java-palette-panels { grid-template-columns: minmax(0, 1fr); }
+  }
+}

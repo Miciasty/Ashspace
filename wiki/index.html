@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ashspace 2.0.0 documentation: coordinate frames, rigid transforms, geometry, and grid mapping for Java and Minecraft plugins.">
+  <meta name="color-scheme" content="dark light">
+  <title>Ashspace documentation</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
+  <link rel="stylesheet" href="./assets/styles.css">
+  <script src="./content/site.js" defer></script>
+  <script src="./content/pages.js" defer></script>
+  <script src="./content/getting-started.js" defer></script>
+  <script src="./content/spaces.js" defer></script>
+  <script src="./content/grids.js" defer></script>
+  <script src="./content/integration.js" defer></script>
+  <script src="./assets/diagrams.js" defer></script>
+  <script src="./assets/vendor/prism/prism-core.min.js" data-manual defer></script>
+  <script src="./assets/vendor/prism/prism-clike.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-java.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-markup.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-kotlin.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-groovy.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-bash.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-powershell.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-yaml.min.js" defer></script>
+  <script src="./assets/vendor/prism/prism-json.min.js" defer></script>
+  <script src="./assets/syntax.js" defer></script>
+  <script src="./assets/app.js" defer></script>
+</head>
+<body class="m-0 bg-page font-sans text-[15px] leading-[1.7] text-foreground antialiased">
+  <a class="skip-link fixed -top-20 left-5 z-[100] rounded-[5px] bg-accent px-[18px] py-2.5 text-page focus:top-2.5" href="#main">Skip to content</a>
+  <header class="site-header sticky top-0 z-40 flex h-[var(--header-height)] items-center justify-between gap-6 border-b border-line bg-page px-7 max-[850px]:gap-[15px] max-[850px]:px-[19px] max-[680px]:px-[18px] min-[1500px]:px-[max(28px,calc((100vw-1624px)/2))] print:hidden">
+    <a class="brand flex items-center gap-[11px] whitespace-nowrap text-[14px]" href="#/overview" aria-label="Documentation home">
+      <svg class="brand-mark h-[30px] w-[27px] text-foreground" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 28 10v13L16 30 4 23V10L16 3Z" stroke="currentColor" stroke-width="1.7"/><path d="m4 10 12 7 12-7M16 17v13M10 6.5l12 7v13" stroke="currentColor" stroke-width="1.7"/></svg>
+      <span id="brand-name" class="text-[14px] font-bold tracking-[.025em]">Documentation</span><span class="brand-divider mx-[3px] text-[22px] font-light text-[#555562] max-[850px]:hidden">/</span><span id="header-product" class="font-medium text-muted max-[850px]:hidden">Plugin</span>
+    </a>
+    <nav class="header-nav mr-auto ml-5 flex items-center gap-[27px] self-stretch text-[13px] max-[1190px]:ml-2.5 max-[850px]:ml-0 max-[850px]:gap-[17px] max-[680px]:hidden" aria-label="Primary"><a class="relative flex h-full items-center text-muted hover:text-foreground aria-[current]:text-foreground aria-[current]:after:absolute aria-[current]:after:inset-x-0 aria-[current]:after:-bottom-px aria-[current]:after:h-0.5 aria-[current]:after:bg-accent aria-[current]:after:content-['']" href="#/overview" data-top="docs">Documentation</a><a class="relative flex h-full items-center text-muted hover:text-foreground aria-[current]:text-foreground aria-[current]:after:absolute aria-[current]:after:inset-x-0 aria-[current]:after:-bottom-px aria-[current]:after:h-0.5 aria-[current]:after:bg-accent aria-[current]:after:content-['']" href="#/coordinate-spaces" data-top="examples">Examples</a><a class="relative flex h-full items-center text-muted hover:text-foreground aria-[current]:text-foreground aria-[current]:after:absolute aria-[current]:after:inset-x-0 aria-[current]:after:-bottom-px aria-[current]:after:h-0.5 aria-[current]:after:bg-accent aria-[current]:after:content-['']" href="#/changelog" data-top="changelog">Changelog</a></nav>
+    <div class="header-actions flex items-center gap-[15px] max-[850px]:gap-2 max-[680px]:ml-auto">
+      <button class="search-trigger flex items-center gap-2.5 rounded-md border border-line bg-surface px-[9px] py-[7px] text-[12px] text-muted max-[850px]:h-[30px] max-[850px]:p-[7px] max-[680px]:border-0 max-[680px]:bg-transparent [&_kbd]:ml-[25px] max-[1190px]:[&_kbd]:ml-2.5 max-[850px]:[&_kbd]:hidden" type="button" aria-label="Search documentation" data-open-search><span class="search-glyph relative mr-[3px] inline-block size-[13px] shrink-0 rounded-full border-[1.5px] border-current after:absolute after:-right-1 after:-bottom-0.5 after:h-[1.5px] after:w-[5px] after:rotate-45 after:bg-current after:content-['']" aria-hidden="true"></span><span class="search-label max-[1190px]:hidden">Search documentation</span><kbd>Ctrl K</kbd></button>
+      <button class="icon-button grid h-8 w-[30px] place-items-center rounded-[5px] text-muted hover:bg-surface hover:text-foreground [&_svg]:size-[19px] theme-toggle" type="button" aria-label="Switch to light theme" title="Switch theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z"/></svg></button>
+      <button class="icon-button grid h-8 w-[30px] place-items-center rounded-[5px] text-muted hover:bg-surface hover:text-foreground [&_svg]:size-[19px] menu-toggle hidden max-[680px]:grid" type="button" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    </div>
+  </header>
+  <button class="nav-backdrop fixed inset-x-0 top-[var(--header-height)] bottom-0 z-[34] bg-black/60 backdrop-blur-[3px]" type="button" tabindex="-1" aria-label="Close navigation" hidden></button>
+  <div class="docs-layout mx-auto grid max-w-[1680px] grid-cols-[var(--sidebar-width)_minmax(0,1fr)] max-[680px]:block print:block">
+    <aside class="sidebar sticky top-[var(--header-height)] flex h-[calc(100dvh-var(--header-height))] flex-col overflow-y-auto border-r border-line pt-[29px] pr-[23px] pb-5 pl-[27px] [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] max-[850px]:px-[17px] max-[850px]:py-[27px] max-[680px]:fixed max-[680px]:bottom-0 max-[680px]:left-0 max-[680px]:z-[35] max-[680px]:hidden max-[680px]:w-[280px] max-[680px]:max-w-[85vw] max-[680px]:bg-page max-[680px]:p-[25px] max-[680px]:[&.is-open]:flex print:hidden" id="sidebar" aria-label="Documentation navigation">
+      <a class="product-card -mt-0.5 mb-[31px] flex items-center gap-[11px] rounded-md border border-line bg-[linear-gradient(120deg,var(--surface),var(--bg))] px-2.5 py-[11px]" href="#/overview"><span class="product-symbol grid size-[33px] shrink-0 place-items-center rounded-[5px] border border-accent/30 bg-accent-soft font-mono text-[15px] leading-none text-accent" aria-hidden="true">S</span><span><strong id="sidebar-product" class="block text-[13px] leading-[1.4] font-semibold">Plugin</strong><span id="product-version" class="block text-[10px] leading-[1.6] text-muted">Documentation</span></span><svg class="ml-auto size-[14px] shrink-0 text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 8 4 4-4 4"/></svg></a>
+      <nav id="page-navigation" aria-label="Topics"></nav>
+      <div class="sidebar-footer mt-auto flex items-center gap-[7px] pt-[23px] font-mono text-[10px] leading-[normal] text-subtle"><span class="status-dot size-[5px] shrink-0 rounded-full bg-accent" aria-hidden="true"></span><span id="sidebar-note">Plugin documentation</span></div>
+    </aside>
+    <div class="reading-layout grid min-w-0 grid-cols-[minmax(0,1fr)_191px] min-[1500px]:grid-cols-[minmax(0,1fr)_210px] max-[1190px]:grid-cols-[minmax(0,1fr)] print:block">
+      <main id="main" class="min-w-0 outline-none" tabindex="-1"><article id="article" class="article mx-auto max-w-[860px] px-[45px] pt-[39px] pb-[50px] min-[1500px]:px-[65px] max-[1190px]:max-w-[800px] max-[1190px]:px-11 max-[1190px]:py-[37px] max-[850px]:px-7 max-[850px]:py-8 max-[680px]:px-[21px] max-[680px]:pt-[27px] max-[680px]:pb-[30px] print:max-w-none print:p-0"><p class="loading-message p-[30px]">Loading documentation…</p></article></main>
+      <aside class="page-outline min-w-0 pt-[85px] pr-[22px] max-[1190px]:hidden print:hidden" aria-label="On this page"><div class="outline-inner sticky top-[110px] max-h-[calc(100dvh-140px)] overflow-y-auto [scrollbar-width:thin]"><p class="outline-title mb-[14px] text-[11px] font-semibold text-foreground">On this page</p><nav id="table-of-contents" class="flex flex-col border-l border-line"></nav><div class="outline-rule mt-[26px] mb-[18px] border-t border-line"></div><button class="text-button flex items-center gap-2 p-0 text-left text-[11px] text-muted hover:text-accent [&_svg]:size-[13px]" type="button" id="copy-page-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2-2 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 1)"/></svg>Copy page link</button><p class="outline-caption mt-[15px] text-[10px] leading-[1.6] text-subtle" id="outline-caption"></p></div></aside>
+    </div>
+  </div>
+  <dialog id="search-dialog" class="fixed top-[15vh] m-0 mx-auto max-h-[min(650px,80dvh)] w-[min(620px,calc(100vw-30px))] overflow-hidden rounded-[10px] border border-line bg-page p-0 text-foreground shadow-[0_30px_100px_#0009] backdrop:bg-black/50 backdrop:backdrop-blur-[5px] max-[680px]:top-[9vh] max-[680px]:max-h-[82dvh]" aria-label="Search documentation">
+    <form class="search-form flex items-center gap-[15px] border-b border-line px-[18px] py-[15px] text-muted" method="dialog"><span class="search-glyph relative mr-[3px] inline-block size-[13px] shrink-0 rounded-full border-[1.5px] border-current after:absolute after:-right-1 after:-bottom-0.5 after:h-[1.5px] after:w-[5px] after:rotate-45 after:bg-current after:content-['']" aria-hidden="true"></span><input id="search-input" class="min-w-0 flex-1 border-0 bg-transparent text-[15px] text-foreground outline-none" type="search" placeholder="Search documentation…" aria-label="Search documentation" autocomplete="off"><button class="search-close p-0" aria-label="Close search" type="submit"><kbd>Esc</kbd></button></form>
+    <p class="search-status m-0 px-[19px] pt-[13px] pb-1.5 font-mono text-[10px] leading-[normal] text-subtle" id="search-status" role="status"></p><div id="search-results" class="max-h-[410px] overflow-auto px-2 pt-[5px] pb-[13px] max-[680px]:max-h-[54dvh]"></div><div class="search-help flex items-center justify-between gap-2 border-t border-line px-4 py-2.5 text-[10px] text-subtle [&_kbd]:text-[9px] max-[680px]:[&>span:last-child]:hidden"><span><kbd>↑</kbd> <kbd>↓</kbd> to navigate</span><span><kbd>↵</kbd> to open</span><span>Search runs on your device</span></div>
+  </dialog>
+  <div class="toast pointer-events-none fixed bottom-[25px] left-1/2 z-[80] max-w-[calc(100vw-30px)] -translate-x-1/2 translate-y-[15px] rounded-md border border-line bg-raised px-[18px] py-2.5 text-center text-[12px] text-foreground opacity-0 transition-[opacity,translate] duration-150 [&.visible]:translate-y-0 [&.visible]:opacity-100" id="toast" role="status" aria-live="polite"></div>
+  <noscript><div class="noscript-message p-[30px]">Enable JavaScript to read this documentation. This WIKI loads local content and does not send search queries to a server.</div></noscript>
+</body>
+</html>
