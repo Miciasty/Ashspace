@@ -81,7 +81,7 @@
     const downloadLink = document.createElement('a');
     downloadLink.className = 'download-link whitespace-nowrap text-[11px] text-accent hover:underline';
     downloadLink.href = downloadUrl;
-    downloadLink.textContent = 'Download ↗';
+    downloadLink.textContent = 'Maven Central ↗';
     downloadLink.target = '_blank';
     downloadLink.rel = 'noopener noreferrer';
     $('.header-actions').prepend(downloadLink);
