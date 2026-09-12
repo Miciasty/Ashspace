@@ -1,5 +1,7 @@
 # Ashspace — ISSUES
 
+**Aktualne koordynaty wydania (2026-09-10): 2.0.0**, bez SNAPSHOT. Zależności uzgodniono dla całego zestawu bibliotek; 545 testów na Java 21 przeszło bez błędów. [Wersje, sumy artefaktów i dowody](../Ashnav/VERIFICATION.md#release-version-alignment). Bez operacji Git i publikacji. Wcześniejsze wpisy poniżej zachowują historyczne wersje i wyniki.
+
 ## Cel pliku
 
 Ten plik powstał 2026-09-09 po przeglądzie wspólnych zasad Blackframe i przyjęciu [blackframe.md, rewizja 2.0](../blackframe.md). Służy do zaplanowania korekt tej biblioteki oraz przekazywania pracy między kolejnymi, niezależnymi sesjami. Nie trzeba znać historii rozmowy: poniżej są powód zadania, miejsca w kodzie, kryteria odbioru i powiązania z innymi projektami.

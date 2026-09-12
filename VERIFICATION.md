@@ -1,6 +1,10 @@
 # Ashspace verification record
 
-Latest correction: [SPACE-012 shape conversions](#2026-09-10--shape-preserving-conversions-space-012).
+Current release coordinates: **Ashspace 2.0.0**, with Ashcore **1.2.0** and Ashgrid **1.3.0**.
+The current source set passed **87 tests + 2 artifact tests** as part of the 545-test Java 21
+[shared release verification](../Ashnav/VERIFICATION.md#release-version-alignment).
+That record contains current artifact hashes and reproduction. No Git operations or publication
+were performed. The shape-conversion and older records below retain their historical snapshot hashes.
 
 ## 2026-09-10 — Shape-preserving conversions (SPACE-012)
 

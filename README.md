@@ -2,7 +2,7 @@
 
 Java library for coordinate frames, rigid transforms, and world/local-to-grid conversions, so a point on a moving object can be located in the world and in a voxel grid.
 
-This checkout builds **2.0.0-SNAPSHOT**, an unpublished development version for the Blackframe contract revision 2.0 corrections. Publication status and local verification are recorded in [VERIFICATION.md](VERIFICATION.md).
+This checkout uses release version **2.0.0** for the Blackframe contract revision 2.0 corrections. Publication status and local verification are recorded in [VERIFICATION.md](VERIFICATION.md).
 
 > [!NOTE]
 > Ashspace handles coordinate frames, rigid transforms, and world/local conversion rules.  
@@ -99,9 +99,9 @@ Transform walks need `O(1)` live additional memory and create `O(d)` temporary t
 
 ## 8. Quick-start
 
-Requires a JDK 21+ and Maven; verification uses Java release 21. The current development dependencies are **Ashcore 1.2.0-SNAPSHOT** and **Ashgrid 1.3.0-SNAPSHOT**. Provision these verified artifacts before building; local availability does not establish remote publication. JUnit 5.10.2 is test-only. Earlier verification with released dependencies remains recorded in VERIFICATION.md.
+Requires a JDK 21+ and Maven; verification uses Java release 21. The dependencies are **Ashcore 1.2.0** and **Ashgrid 1.3.0**. Provision these artifacts before building; local availability does not establish remote publication. JUnit 5.10.2 is test-only. Earlier verification remains recorded in VERIFICATION.md.
 
-For this unpublished snapshot, build the checkout with `mvn -B clean verify`. To use its coordinates in another local Maven project, run `mvn -B install` after verification. This installs the snapshot locally; it does not publish it.
+Build the checkout with `mvn -B clean verify`. To use its coordinates in another local Maven project, run `mvn -B install` after verification. This installs the release artifact locally; it does not publish it.
 
 Maven:
 
@@ -109,7 +109,7 @@ Maven:
 <dependency>
   <groupId>dev.nasaka.blackframe</groupId>
   <artifactId>ashspace</artifactId>
-  <version>2.0.0-SNAPSHOT</version>
+  <version>2.0.0</version>
 </dependency>
 ```
 
@@ -229,11 +229,11 @@ Repeatability requires equal numeric inputs, frame definitions, configuration, d
 
 The supported surface includes public types and members under `nsk.nu.ashspace.api` and the existing public `implementation.grid.ChunkLocalIndexer`. No public type, constructor or method has been removed or moved. Public signatures expose Ashcore/Ashgrid types, so upgrading dependencies also needs integration testing. The dependency versions above are the tested baseline, not a claim that every later version is compatible. Ashgrid's `SquareXZChunkScheme` remains owned by Ashgrid.
 
-Version **2.0.0-SNAPSHOT** reserves a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must migrate before adopting a release. Existing `1.0.0` artifacts must not be replaced with this code.
+Version **2.0.0** reserves a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must migrate before adopting a release. Existing `1.0.0` artifacts must not be replaced with this code.
 
-Frame removal, frozen graphs and the frame-attached mapper are additive APIs in the same unpublished snapshot. Common-ancestor composition preserves transform direction and order but can change floating-point rounding relative to the previous root-based calculation. No existing constructor, method or return type was changed. Snapshot mutability is explicit through `isSnapshot()`; snapshot instances reject `define`, `remove` and `removeSubtree`.
+Frame removal, frozen graphs and the frame-attached mapper are additive APIs in 2.0.0. Common-ancestor composition preserves transform direction and order but can change floating-point rounding relative to the previous root-based calculation. No existing constructor, method or return type was changed. Snapshot mutability is explicit through `isSnapshot()`; snapshot instances reject `define`, `remove` and `removeSubtree`.
 
-Capsule and OBB conversions are additive APIs in `2.0.0-SNAPSHOT`. They require Ashcore `1.2.0-SNAPSHOT`, which owns `OrientedBox`; do not force an older Ashcore onto the runtime classpath. No existing method or conservative mapping behavior changes. The complete Ashspace suite checks this dependency together with Ashgrid `1.3.0-SNAPSHOT`; artifact hashes are recorded in [VERIFICATION.md](VERIFICATION.md).
+Capsule and OBB conversions are additive APIs in `2.0.0`. They require Ashcore `1.2.0`, which owns `OrientedBox`; do not force an older Ashcore onto the runtime classpath. No existing method or conservative mapping behavior changes. The complete Ashspace suite checks this dependency together with Ashgrid `1.3.0`; artifact hashes are recorded in [VERIFICATION.md](VERIFICATION.md).
 
 Ashtrace and Ashnav consumers should test the corrected boundary examples, confirm their chunk layout is standard XZ, handle the explicit validation failures and keep a single stable frame configuration for each query. No consumer or lower-layer checkout is changed by this correction. There are no guaranteed serialized formats or cross-release bitwise result streams.
 
