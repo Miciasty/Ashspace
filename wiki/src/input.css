@@ -5,11 +5,13 @@
 @import "./syntax-code.css";
 @import "./diagrams.css";
 @import "./frame-chain-3d.css";
+@import "./aabb-3d.css";
 
 @source "../index.html";
 @source "../assets/app.js";
 @source "../assets/diagrams.js";
 @source "../assets/frame-chain-3d.js";
+@source "../assets/aabb-3d.js";
 @source "../content";
 
 @theme inline {

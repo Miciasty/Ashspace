@@ -9,7 +9,7 @@
     "watch:css": "tailwindcss -i ./src/input.css -o ./assets/styles.css --watch=always",
     "dev": "node dev.mjs",
     "preview": "node preview.mjs",
-    "check": "node check.mjs && node check-frame-chain.mjs",
+    "check": "node check.mjs && node check-frame-chain.mjs && node check-aabb.mjs",
     "check:examples": "node check-examples.mjs"
   },
   "devDependencies": {

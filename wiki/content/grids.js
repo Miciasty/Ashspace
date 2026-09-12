@@ -14,26 +14,40 @@
           ['<code>OrientedBox</code>','<code>orientedBox(transform, box)</code>','Center moves, orientations compose, and half extents are copied exactly.'],
           ['<code>AxisAlignedBox</code>','<code>axisAlignedBox(transform, box)</code>','An AABB encloses all eight transformed corners. It may include extra space.']
         ])},
-        {id:'box-and-enclosure',title:'A box and its enclosure',html:`<p>An axis-aligned bounding box (AABB) follows the axes of its coordinate system. An oriented bounding box (OBB) has its own orientation. After a rotation, the smallest axis-aligned enclosure of the computed corners generally occupies more space than the box.</p><p>Rotate the rectangular cross-section below. The OBB outline follows the shape; the AABB outline follows the destination axes. Compare their areas to see how much extra space the enclosure adds. The separate Java example below tests a probe against a rotated cube.</p><div data-diagram="geometry"></div>${note('A candidate is not a collision', '<p>Use the enclosure to select candidate cells or objects. Apply the actual shape test separately when your query requires exact contact. Ashspace converts geometry; Ashcore or your collision system performs that test.</p>')}`},
+        {id:'box-and-enclosure',title:'A box and its enclosure',html:`<p>An axis-aligned bounding box (AABB) follows the axes of its coordinate system. An oriented bounding box (OBB) has its own orientation. After a rotation, the smallest axis-aligned enclosure of the computed corners generally occupies more space than the box.</p><p>Use the X, Y and Z sliders to rotate the blue box. Its volume stays at 8 cubic blocks while the amber AABB changes size. Drag the scene to inspect it from another angle. Enable <strong>Candidate cells</strong> to show the unit cells selected from the enclosure.</p><div data-diagram="geometry"></div><p>Choose <strong>Y = 45°</strong>: the AABB volume becomes 18 cubic blocks, or 2.25 times the box volume, and its range covers 72 cells. Choose <strong>Align with axes</strong>: the volumes match and the range covers 16 cells. The aligned box spans Y = −0.5 to 0.5, so it occupies two cell layers. A cell count measures grid coverage, not shape volume.</p>${note('A candidate is not a collision', '<p>Use the enclosure to select candidate cells or objects. Apply the actual shape test separately when your query requires exact contact. Ashspace converts geometry; Ashcore or your collision system performs that test.</p>')}`},
         {id:'convert-a-box',title:'Convert a box',html:code(`import nsk.nu.ashcore.api.collision.CollisionTests;
 import nsk.nu.ashcore.api.geometry.AxisAlignedBox;
 import nsk.nu.ashcore.api.geometry.OrientedBox;
 import nsk.nu.ashcore.api.geometry.Sphere;
 import nsk.nu.ashcore.api.math.Quaternion;
 import nsk.nu.ashcore.api.math.Vector3;
+import nsk.nu.ashgrid.api.grid.bounds.IntBox3;
+import nsk.nu.ashgrid.implementation.grid.indexing.SquareXZChunkScheme;
 import nsk.nu.ashspace.api.geometry.GeometryTransforms3;
+import nsk.nu.ashspace.api.grid.GridSpaceMapper3;
 import nsk.nu.ashspace.api.transform.RigidTransform3;
 
 public final class GeometryConversionExample {
     public static void main(String[] args) {
         AxisAlignedBox box = new AxisAlignedBox(
-                new Vector3(-1, -1, -1), new Vector3(1, 1, 1));
+                new Vector3(-2, -0.5, -1), new Vector3(2, 0.5, 1));
         RigidTransform3 turn = new RigidTransform3(
                 Quaternion.fromAxisAngle(new Vector3(0, 1, 0), Math.PI / 4),
                 Vector3.ZERO);
         OrientedBox shape = GeometryTransforms3.orientedBox(turn, box);
         AxisAlignedBox enclosure = GeometryTransforms3.axisAlignedBox(turn, box);
-        Vector3 probe = new Vector3(1.3, 0, 1.3);
+        Vector3 extent = enclosure.max().sub(enclosure.min());
+        double volume = extent.x() * extent.y() * extent.z();
+        assert Math.abs(volume - 18.0) < 1e-12;
+
+        GridSpaceMapper3 grid = new GridSpaceMapper3(
+                1.0, Vector3.ZERO, new SquareXZChunkScheme(16));
+        IntBox3 cells = grid.worldAabbToCells(enclosure);
+        assert cells.equals(new IntBox3(-3, -1, -3, 3, 1, 3));
+        assert grid.worldAabbToCells(box).equals(
+                new IntBox3(-2, -1, -1, 2, 1, 1));
+
+        Vector3 probe = new Vector3(2, 0, 2);
         boolean candidate = enclosure.contains(probe);
         boolean contact = CollisionTests.sphereVsOrientedBox(
                 new Sphere(probe, 0), shape);

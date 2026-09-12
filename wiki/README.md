@@ -20,14 +20,14 @@ The generated `assets/styles.css` is committed. You can also open `index.html` d
 
 Edit `content/site.js` for navigation and product metadata. `content/pages.js` defines shared components; the other content scripts contain the articles. `assets/diagrams.js` and `src/diagrams.css` implement the figures. Edit `src/*.css`, then rebuild; do not edit generated CSS.
 
-The frame-chain scene lives in `assets/frame-chain-3d.js` and `src/frame-chain-3d.css`. It projects shaded cuboid faces through a perspective camera into SVG, with no external renderer or downloaded assets. It redraws only after a pose, camera, size or theme change. Diagram cleanup removes pointer/keyboard listeners, observers and pending animation frames. Drag or use arrow keys to orbit, scroll or use the zoom buttons to zoom, and use Home / Reset view to restore the camera. Reset all also restores frame poses and the selected readout.
+The frame-chain scene lives in `assets/frame-chain-3d.js` and `src/frame-chain-3d.css`. The geometry scene lives in `assets/aabb-3d.js` and `src/aabb-3d.css`; it compares an OBB with the AABB enclosing its eight rotated corners and an optional lattice of candidate unit cells. Its X/Y/Z sliders apply rotations around fixed axes in that order. The two scenes project shaded faces through a perspective camera into SVG, with no external renderer or downloaded assets. They redraw only after a pose, camera, size or theme change. Diagram cleanup removes pointer/keyboard listeners, observers and pending animation frames. Drag or use arrow keys to orbit, scroll or use the zoom buttons to zoom, and use Home / Reset view to restore the camera. Reset all also restores model controls.
 
 ```powershell
 npm run build
 npm run check:examples
 ```
 
-The build checks page and section links, navigation, relative assets, version metadata, removed demonstration content, and the 3D model's reference poses and relative-coordinate invariants, then writes browser files to `wiki/_site`. The example check requires JDK 21+ (`JAVA_HOME` or PATH) and the POM's Ashcore/Ashgrid dependencies in the default Maven repository. For a custom Maven repository, set `MAVEN_REPO_LOCAL`, or run the following from the repository root first:
+The build checks page and section links, navigation, relative assets, version metadata, removed demonstration content, the frame-chain model's reference poses and relative-coordinate invariants, and the AABB model's analytical bounds, rotation order, edge lengths and cell coverage. It then writes browser files to `wiki/_site`. The example check requires JDK 21+ (`JAVA_HOME` or PATH) and the POM's Ashcore/Ashgrid dependencies in the default Maven repository. For a custom Maven repository, set `MAVEN_REPO_LOCAL`, or run the following from the repository root first:
 
 ```powershell
 mvn -B -ntp dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=target/wiki-classpath.txt

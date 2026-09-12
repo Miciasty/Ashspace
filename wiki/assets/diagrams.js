@@ -238,26 +238,7 @@
   }
 
   function geometry(host) {
-    const defaults = { angle: 35, view: 'both' }, state = { ...defaults };
-    const f = shell(host, { title: 'A rotated shape and its enclosing AABB', badge: 'XZ footprint · Y rotation',
-      choices: segments('view', 'Visible box geometry', [['both', 'Compare'], ['obb', 'Oriented box'], ['aabb', 'Enclosing AABB']], 'both'),
-      stats: [['obb', 'Oriented box XZ area'], ['aabb', 'Enclosing AABB XZ area'], ['bounds', 'Enclosing X and Z bounds'], ['ratio', 'Envelope / shape area']],
-      singleControl: true,
-      controls: (id) => range(id, 'angle', 'Y rotation', 0, 90, 1, 35, '°'),
-      caption: 'The source AABB has side lengths (4, 1, 2), centered at the origin. orientedBox preserves the rotated box within coordinate rounding. axisAlignedBox transforms all eight corners, then encloses their coordinate minima and maxima. The amber area may contain empty space around the blue shape. A cell range derived from this envelope is conservative, so further shape checks may be needed.' });
-    function draw() {
-      const corners = [{ x: -2, y: 0, z: -1 }, { x: 2, y: 0, z: -1 }, { x: 2, y: 0, z: 1 }, { x: -2, y: 0, z: 1 }].map((p) => rotate(p, state.angle));
-      const minX = Math.min(...corners.map((p) => p.x)), maxX = Math.max(...corners.map((p) => p.x)), minZ = Math.min(...corners.map((p) => p.z)), maxZ = Math.max(...corners.map((p) => p.z)), area = (maxX - minX) * (maxZ - minZ);
-      begin(f.svg, f.id, 'Rotated box and conservative envelope', `A 4 by 2 XZ footprint rotates ${state.angle} degrees about Y. Oriented box area 8 square blocks. Enclosing AABB area ${fmt(area)} square blocks. X bounds ${fmt(minX)} to ${fmt(maxX)}, Z bounds ${fmt(minZ)} to ${fmt(maxZ)}.`);
-      const project = (x, z) => ({ x: 360 + x * 49, y: 177 + z * 49 }); grid(f.svg, project, -6, 6, -3, 3);
-      arrow(f.svg, project(-6, 0), project(6, 0), f.id, 'muted'); arrow(f.svg, project(0, -3), project(0, 3), f.id, 'muted'); label(f.svg, 666, 168, 'X', 'diagram-muted-label'); label(f.svg, 374, 327, 'Z', 'diagram-muted-label');
-      if (state.view !== 'obb') { const p = project(minX, minZ); add(f.svg, 'rect', { x: p.x, y: p.y, width: (maxX - minX) * 49, height: (maxZ - minZ) * 49, class: 'diagram-envelope' }); }
-      if (state.view !== 'aabb') polygon(f.svg, corners.map((p) => project(p.x, p.z)), 'diagram-shape');
-      corners.forEach((p) => circle(f.svg, project(p.x, p.z), 'diagram-point diagram-fill-accent', 4));
-      label(f.svg, 35, 342, 'Blue: rotated shape', 'diagram-label diagram-fill-accent'); label(f.svg, 390, 342, 'Amber: enclosing AABB', 'diagram-label diagram-fill-warm');
-      f.stat('obb', '8.00 blocks²'); f.stat('aabb', `${fmt(area)} blocks²`); f.stat('bounds', `X [${fmt(minX)}, ${fmt(maxX)}] · Z [${fmt(minZ)}, ${fmt(maxZ)}]`); f.stat('ratio', `${fmt(area / 8)}×`); f.value('angle', `${state.angle}°`); f.choices(state);
-    }
-    return controls(f, state, defaults, draw);
+    return window.WikiAabb3D.mount(host);
   }
 
   const factories = { coordinates, composition, 'frame-chain': frameChain, grid: gridFigure, ranges, snapshots, geometry };

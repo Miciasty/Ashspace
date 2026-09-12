@@ -1,0 +1,27 @@
+@layer components {
+  .aabb3d-viewport { position: relative; overflow: hidden; background: var(--diagram-plot); border-top: 1px solid var(--border); }
+  .aabb3d-scene { display: block; width: 100%; height: 410px; touch-action: none; user-select: none; cursor: grab; }
+  .aabb3d-scene.is-dragging { cursor: grabbing; }
+  .aabb3d-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  .aabb3d-key { position: absolute; bottom: 14px; left: 18px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px 15px; color: var(--muted); font-size: 10px; pointer-events: none; }
+  .aabb3d-key span { display: flex; align-items: center; gap: 6px; }
+  .aabb3d-key [hidden] { display: none; }
+  .aabb3d-key i { width: 9px; height: 9px; border-radius: 2px; }
+  .aabb3d-key-box { background: var(--accent); }
+  .aabb3d-key-envelope { border: 1px solid var(--diagram-warm); background: var(--diagram-envelope); }
+  .aabb3d-key-cells { border: 1px solid var(--diagram-z); }
+  .aabb3d-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px; padding: 18px 20px; }
+  .aabb3d-stats span, .aabb3d-bounds span { display: block; color: var(--muted); font-size: 11px; }
+  .aabb3d-stats output { display: block; margin-top: 7px; color: var(--text); font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .aabb3d-stats [data-stat="box"] { color: var(--accent); }
+  .aabb3d-stats [data-stat="volume"], .aabb3d-stats [data-stat="ratio"] { color: var(--diagram-warm); }
+  .aabb3d-bounds { display: grid; gap: 12px; padding: 0 20px 18px; border-bottom: 1px solid var(--border); }
+  .aabb3d-bounds output { display: block; margin-top: 5px; color: var(--text); font-family: var(--mono); font-size: 11px; line-height: 1.7; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  @media (max-width: 620px) {
+    .aabb3d-scene { height: 330px; }
+    .aabb3d-stats { padding: 16px 14px; gap: 16px 14px; }
+    .aabb3d-stats output { font-size: 13px; }
+    .aabb3d-bounds { padding: 0 14px 16px; }
+  }
+  @media print { .aabb3d-scene { height: 350px; } }
+}
