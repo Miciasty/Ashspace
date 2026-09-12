@@ -26,7 +26,7 @@
           ['Half-open range','An interval <code>[min, max)</code> that includes its minimum and excludes its maximum. See <a href="#/cell-ranges">cell and chunk ranges</a>.'],
           ['Snapshot','A frozen copy of frame definitions. Later source updates do not change it; it does not copy grid storage or Minecraft state.']
         ])},
-        {id: 'version-and-source', title: 'Version and source', html: '<p>The examples and contracts were checked against the current 2.0.0 source. Maven coordinates use <code>dev.nasaka.blackframe:ashspace</code>; Java imports use <code>nsk.nu.ashspace</code>.</p><p>Read <a href="#/changelog">migration notes</a> before updating an existing integration. Browse the <a href="https://github.com/Miciasty/Ashspace">source repository</a> or the <a href="https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashspace/2.0.0">Maven Central artifact</a> for this version. Ashspace is distributed under the <a href="https://github.com/Miciasty/Ashspace/blob/master/LICENSE">Apache License 2.0</a>.</p>'}
+        {id: 'version-and-source', title: 'Version and source', html: '<p>The examples and contracts were checked against the current 2.0.0 source. Maven coordinates use <code>dev.nasaka.blackframe:ashspace</code>; Java imports use <code>nsk.nu.ashspace</code>.</p><p>Read <a href="#/migration">migration notes</a> before updating an existing integration. Browse the <a href="https://github.com/Miciasty/Ashspace">source repository</a> or the <a href="https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashspace/2.0.0">Maven Central artifact</a> for this version. Ashspace is distributed under the <a href="https://github.com/Miciasty/Ashspace/blob/master/LICENSE">Apache License 2.0</a>.</p>'}
       ]
     },
     {
@@ -95,7 +95,7 @@ public final class FirstConversionExample {
       ]
     },
     {
-      id:'changelog',category:'Reference',title:'Changelog',description:'Ashspace 2.0.0 behavior and migration notes for consumers of 1.0.0.',kind:'reference',
+      id:'migration',category:'Reference',title:'Migration',description:'Ashspace 2.0.0 behavior and migration notes for consumers of 1.0.0.',kind:'reference',
       sections:[
         {id:'version-2',title:'2.0.0',html:`<p>The current checkout declares version <code>2.0.0</code>. It uses Ashcore <code>1.2.0</code> and Ashgrid <code>1.3.0</code>. This summary describes the checked-in behavior; it does not assign release dates to individual changes.</p>${table(['Area','Current behavior'],[
           ['Grid boundaries','Point mapping uses rounded division followed by floor, without a boundary epsilon.'],

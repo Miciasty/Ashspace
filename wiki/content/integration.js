@@ -5,7 +5,7 @@
   window.WIKI_PAGES.push(
     {
       id: 'spaces-and-snapshots',
-      category: 'Integration',
+      category: 'Spatial model',
       title: 'Conversions and snapshots',
       description: 'Convert between frames and keep one pose throughout a complete query.',
       kind: 'concept',
@@ -117,6 +117,7 @@ snapshotHasShip=true`, 'Expected output', 'output')}
       id: 'api-reference',
       category: 'Reference',
       title: 'API reference',
+      navTitle: 'API index',
       description: 'Public types, method families, ownership and error contracts in Ashspace 2.0.0.',
       kind: 'reference',
       intro: '<p>This reference covers the nine types under <code>nsk.nu.ashspace.api</code> and the existing public <code>ChunkLocalIndexer</code> helper. Ashcore owns the math and geometry values exposed by these signatures; Ashgrid owns the cell, chunk and integer range types.</p>',

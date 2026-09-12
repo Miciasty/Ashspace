@@ -153,6 +153,10 @@
     const [rawPage, query = ''] = hash.split('?');
     let id;
     try { id = decodeURIComponent(rawPage) || defaultPage; } catch { id = rawPage; }
+    if (id === 'changelog') {
+      id = 'migration';
+      history.replaceState(null, '', `#/migration${query ? `?${query}` : ''}`);
+    }
     return { id, section: new URLSearchParams(query).get('section') };
   }
   function updateOutline() {
@@ -210,8 +214,8 @@
         if (link.dataset.page === id) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
       });
       all('.header-nav a').forEach(link => {
-        const isExample = id === 'coordinate-spaces';
-        const active = link.dataset.top === (id === 'changelog' ? 'changelog' : isExample ? 'examples' : 'docs');
+        const top = id === 'quick-start' ? 'examples' : ['api-reference', 'migration', 'troubleshooting'].includes(id) ? 'reference' : 'docs';
+        const active = link.dataset.top === top;
         if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
       });
       const firstRender = currentPageId === null;

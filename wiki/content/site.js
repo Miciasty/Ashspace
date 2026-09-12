@@ -7,9 +7,9 @@ window.WIKI_CONFIG = {
   demo: false,
   navigation: [
     { title: 'Getting started', items: ['overview', 'installation', 'quick-start'] },
-    { title: 'Spatial model', items: ['coordinate-spaces', 'transforms', 'frame-chains', 'geometry'] },
+    { title: 'Spatial model', items: ['coordinate-spaces', 'transforms', 'frame-chains', 'geometry', 'spaces-and-snapshots'] },
     { title: 'Grid mapping', items: ['grid-mapping', 'frame-grids', 'cell-ranges'] },
-    { title: 'State & reference', items: ['spaces-and-snapshots', 'api-reference', 'troubleshooting', 'changelog'] }
+    { title: 'Reference', items: ['api-reference', 'migration', 'troubleshooting'] }
   ],
   links: {
     github: 'https://github.com/Miciasty/Ashspace',
