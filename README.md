@@ -2,40 +2,31 @@
 
 Java library for coordinate frames, rigid transforms, and world/local-to-grid conversions, so a point on a moving object can be located in the world and in a voxel grid.
 
-This checkout uses release version **2.0.0** for the Blackframe contract revision 2.0 corrections. Publication status and local verification are recorded in [VERIFICATION.md](VERIFICATION.md).
+Version **2.0.0** is available from [Maven Central](https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashspace/2.0.0).
 
 > [!NOTE]
 > Ashspace handles coordinate frames, rigid transforms, and world/local conversion rules.  
 > Voxel storage/traversal belongs to Ashgrid, and pathfinding belongs to Ashnav.
 
-## 1. Purpose
-
-Ashspace defines coordinate frames and converts data between them without engine-specific dependencies. A frame gives a name to an origin and orientation: a tool at `(1, 0, 0)` on a ship moves in world space when that ship moves.
-
-## 2. Problem
-
-Plugins and engines often duplicate fragile conversion code:
-- local object coordinates to world coordinates,
-- world coordinates back to local frames,
-- world points to voxel/cell indices with negative-coordinate edge cases.
-
-When each system does this differently, bugs appear at boundaries and precision edges. Ashspace centralizes this logic behind deterministic contracts.
-
-## 3. When to use
+## When to use it
 
 Use Ashspace when:
+
 - you need deterministic frame-to-frame conversion in 3D,
 - you need rigid transforms (rotation + translation, no scale),
 - you need consistent floor-based mapping from world space to Ashgrid cells/chunks/chunk-local coordinates.
 
 Do not use Ashspace when:
+
 - you need scene graph runtime systems,
 - you need rendering, meshing, or pathfinding pipelines,
 - you need non-rigid transforms (scale/shear).
 
-## 4. Simple example (Minecraft plugin example)
+## Example: tools on a moving ship
 
-Minecraft plugin scenario:
+A frame gives a name to an origin and orientation: a tool at `(1, 0, 0)` on a ship
+moves in world space when that ship moves.
+
 1. A vehicle has its own local frame (`ship`).
 2. Turrets and tools use child frames (`turret`, `drill`).
 3. You convert hit rays from local tool space to world space.
@@ -43,67 +34,9 @@ Minecraft plugin scenario:
 
 The caller supplies the ship pose and keeps it stable during the complete query. Ashspace does not detect a hit, simulate vehicle motion or decide whether a creature can walk through a cell.
 
-## 5. How it works
+## Requirements and quick start
 
-1. `FrameGraph3` stores an acyclic parent chain of frames with `parentFromFrame` transforms. It supports leaf/subtree removal and queryable frozen snapshots.
-2. `RigidTransform3` applies point/vector conversions and supports composition/inversion.
-3. `SpaceConverter3` resolves transforms between any two connected frames and applies them to points and Ashcore geometry.
-4. `GridSpaceMapper3` converts world/local points and AABBs to Ashgrid indices using explicit `cellSize`, `worldOrigin`, and a square XZ chunk size obtained from `ChunkScheme`.
-   `FrameGridSpaceMapper3` attaches a grid to a frame, so its origin and axes move with that frame.
-5. Values returned by conversions are immutable. Frame-based conversions read the current graph each time and allocate intermediate values along the parent chains.
-
-> [!NOTE]
-> Rotated AABBs are enclosed in the destination grid frame before range mapping, so range results are conservative.
-New `FrameGraph3` instances are mutable and not thread-safe. A graph returned by `snapshot()` is frozen and supports concurrent reads after safe publication. A conservative range can contain cells that the actual rotated box never touches; it is not an exact shape test or a minimal cell set.
-
-## 6. Big-O for operations
-
-Definitions:
-- `h`: frame depth from node to root; `hs` and `ht` are the source and target depths.
-- `d`: number of edges from both frames to their nearest common ancestor.
-- `n`: number of defined frames. Hash-map lookups are assumed to take constant expected time.
-
-| Operation | Complexity | Notes |
-| --- | --- | --- |
-| `RigidTransform3.transformPoint` / `transformVector` | `O(1)` | Fixed-size math. |
-| `RigidTransform3.then` / `inverse` | `O(1)` | Fixed quaternion/vector operations. |
-| `FrameGraph3.define` | `O(h)` | Parent-chain walk for cycle safety. |
-| `FrameGraph3.transform(source, target)` | `O(hs + ht)` | Inspects parent links; composes only the `d` edges below the common ancestor. Identical existing frames take `O(1)`. |
-| `FrameGraph3.frames()` | `O(n)` | Copies definitions in first-definition order; `O(n)` additional memory. |
-| `FrameGraph3.snapshot()` | `O(n)` | Copies definitions into a frozen graph; `O(n)` additional memory. On a snapshot, returns itself in `O(1)`. |
-| `FrameGraph3.remove(frame)` | `O(n)` | Checks that the frame is a non-root leaf; `O(1)` additional memory. |
-| `FrameGraph3.removeSubtree(frame)` | `O(n)` | Builds child lists and removes descendants iteratively; `O(n)` additional memory. |
-| `SpaceConverter3.point/vector/ray/...` | `O(h)` | Includes frame transform lookup. |
-| `GridSpaceMapper3.worldToCell/worldToChunk/worldToChunkLocal` | `O(1)` | Constant-time floor/index math. |
-| `GridSpaceMapper3.worldAabbToCells` | `O(1)` | Fixed number of scalar ops. |
-| `GridSpaceMapper3.worldAabbToChunks` | `O(1)` | Fixed number of scalar ops + chunk projection. |
-| `FrameGridSpaceMapper3` point/center/range conversion | `O(hs + ht)` | One frame conversion plus fixed-size mapping; `O(1)` live additional memory. |
-| `GeometryTransforms3.axisAlignedBox` | `O(1)` | 8 transformed corners. |
-| `GeometryTransforms3.capsule/orientedBox` | `O(1)` | Fixed-size coordinate/orientation math; `O(1)` additional memory, with allocation. |
-
-Transform walks need `O(1)` live additional memory and create `O(d)` temporary transform values plus constant overhead. `rootFrom` composes all `h` parent edges. There is no transform cache: deeper chains require more parent-link inspection, while nearby frames under a deep common ancestor still need only their relative edges composed. These are operation counts, not latency measurements or an allocation-free guarantee. No benchmark claim is made.
-
-## 7. Core terms
-
-- `frame`: named coordinate system node in a parent-linked graph.
-- `root frame`: top frame with no parent (default `world`).
-- `rigid transform`: rotation + translation, without scale.
-- `parentFromFrame`: transform mapping child-frame coordinates into parent-frame coordinates.
-- `floor mapping`: index conversion where each axis uses `floor` (e.g. `-0.2 -> -1`).
-- `half-open range`: interval `[min, max)` where `max` is excluded.
-- `chunk address`: pair `(chunkIndex, chunkLocal)` for a mapped cell.
-- `space convention`: right-handed coordinates with `Y` as up axis.
-- `capsule`: a segment thickened by a radius, with spherical ends.
-- `oriented box` (OBB): a box described by its center, half side lengths and orientation; its axes can rotate.
-- `axis-aligned box` (AABB): a box whose sides follow the current coordinate axes; enclosing a rotated shape can add space.
-
-## 8. Quick-start
-
-Requires a JDK 21+ and Maven; verification uses Java release 21. The dependencies are **Ashcore 1.2.0** and **Ashgrid 1.3.0**. Provision these artifacts before building; local availability does not establish remote publication. JUnit 5.10.2 is test-only. Earlier verification remains recorded in VERIFICATION.md.
-
-Build the checkout with `mvn -B clean verify`. To use its coordinates in another local Maven project, run `mvn -B install` after verification. This installs the release artifact locally; it does not publish it.
-
-Maven:
+Use JDK 21 or newer. Add this dependency to your Maven project:
 
 ```xml
 <dependency>
@@ -113,7 +46,12 @@ Maven:
 </dependency>
 ```
 
-Minimal usage example:
+Maven downloads Ashspace and its transitive dependencies, Ashcore 1.2.0 and Ashgrid 1.3.0,
+from Maven Central. No additional repository configuration or local dependency installation is required.
+
+To build Ashspace from source, use Maven 3.9+ and run `mvn -B clean verify` in this checkout.
+
+Save the following as `AshspaceQuickStart.java` in a consumer project using that dependency:
 
 ```java
 import nsk.nu.ashcore.api.collision.CollisionTests;
@@ -193,7 +131,49 @@ The example uses one graph snapshot for a complete query. Removing the ship from
 
 The tool capsule keeps radius `0.5`, and converting the box to the world and back keeps half extents `(1, 1, 1)`. For the separate 45-degree cube, `(1.3, 0, 1.3)` is inside its enclosing AABB but outside the rotated shape: the last geometry checks print `true` and `false`. The zero-radius sphere is Ashcore's point-contact query; Ashspace supplies only the conversion.
 
-## 9. Coordinates, state and numerical limits
+## How it works
+
+1. `FrameGraph3` stores an acyclic parent chain of frames with `parentFromFrame` transforms. It supports leaf/subtree removal and queryable frozen snapshots.
+2. `RigidTransform3` applies point/vector conversions and supports composition/inversion.
+3. `SpaceConverter3` resolves transforms between any two connected frames and applies them to points and Ashcore geometry.
+4. `GridSpaceMapper3` converts world/local points and AABBs to Ashgrid indices using explicit `cellSize`, `worldOrigin`, and a square XZ chunk size obtained from `ChunkScheme`.
+   `FrameGridSpaceMapper3` attaches a grid to a frame, so its origin and axes move with that frame.
+5. Values returned by conversions are immutable. Frame-based conversions read the current graph each time and allocate intermediate values along the parent chains.
+
+> [!NOTE]
+> Rotated AABBs are enclosed in the destination grid frame before range mapping, so range results are conservative.
+
+New `FrameGraph3` instances are mutable and not thread-safe. A graph returned by `snapshot()` is frozen and supports concurrent reads after safe publication. A conservative range can contain cells that the actual rotated box never touches; it is not an exact shape test or a minimal cell set.
+
+## Operation costs
+
+Definitions:
+
+- `h`: frame depth from node to root; `hs` and `ht` are the source and target depths.
+- `d`: number of edges from both frames to their nearest common ancestor.
+- `n`: number of defined frames. Hash-map lookups are assumed to take constant expected time.
+
+| Operation | Complexity | Notes |
+| --- | --- | --- |
+| `RigidTransform3.transformPoint` / `transformVector` | `O(1)` | Fixed-size math. |
+| `RigidTransform3.then` / `inverse` | `O(1)` | Fixed quaternion/vector operations. |
+| `FrameGraph3.define` | `O(h)` | Parent-chain walk for cycle safety. |
+| `FrameGraph3.transform(source, target)` | `O(hs + ht)` | Inspects parent links; composes only the `d` edges below the common ancestor. Identical existing frames take `O(1)`. |
+| `FrameGraph3.frames()` | `O(n)` | Copies definitions in first-definition order; `O(n)` additional memory. |
+| `FrameGraph3.snapshot()` | `O(n)` | Copies definitions into a frozen graph; `O(n)` additional memory. On a snapshot, returns itself in `O(1)`. |
+| `FrameGraph3.remove(frame)` | `O(n)` | Checks that the frame is a non-root leaf; `O(1)` additional memory. |
+| `FrameGraph3.removeSubtree(frame)` | `O(n)` | Builds child lists and removes descendants iteratively; `O(n)` additional memory. |
+| `SpaceConverter3.point/vector/ray/...` | `O(h)` | Includes frame transform lookup. |
+| `GridSpaceMapper3.worldToCell/worldToChunk/worldToChunkLocal` | `O(1)` | Constant-time floor/index math. |
+| `GridSpaceMapper3.worldAabbToCells` | `O(1)` | Fixed number of scalar ops. |
+| `GridSpaceMapper3.worldAabbToChunks` | `O(1)` | Fixed number of scalar ops + chunk projection. |
+| `FrameGridSpaceMapper3` point/center/range conversion | `O(hs + ht)` | One frame conversion plus fixed-size mapping; `O(1)` live additional memory. |
+| `GeometryTransforms3.axisAlignedBox` | `O(1)` | 8 transformed corners. |
+| `GeometryTransforms3.capsule/orientedBox` | `O(1)` | Fixed-size coordinate/orientation math; `O(1)` additional memory, with allocation. |
+
+Transform walks need `O(1)` live additional memory and create `O(d)` temporary transform values plus constant overhead. `rootFrom` composes all `h` parent edges. There is no transform cache: deeper chains require more parent-link inspection, while nearby frames under a deep common ancestor still need only their relative edges composed. These are operation counts, not latency measurements or an allocation-free guarantee. No benchmark claim is made.
+
+## Coordinates, state and numerical limits
 
 Coordinates are right-handed with Y up. `parentFromFrame` converts child coordinates into parent coordinates. `a.then(b)` applies `a` first, then `b`. A point is rotated and translated; a vector or direction is only rotated, retaining its length within rounding. No scale or shear is supported.
 
@@ -223,30 +203,34 @@ For a mutable graph, keep it unchanged throughout the entire logical query, incl
 
 Relative transformations find the nearest common ancestor and compose only the edges below it. For example, tool frames one unit apart remain one unit apart even when their shared ship has world translation `2^54`. This also permits relative queries when the shared ancestor's accumulated world pose would overflow. `rootFrom` and actual world conversions still have the earlier numerical limits, and lost precision in an already computed world point cannot be recovered.
 
-Repeatability requires equal numeric inputs, frame definitions, configuration, dependency versions and a stable graph during queries. Snapshot iteration follows first-definition order; updating a frame preserves its position. Arithmetic results do not depend on the order in which an otherwise identical valid graph was defined. The guarantee covers repeated queries in the same runtime environment. Bitwise agreement across operating systems/JDKs or library releases is not promised; this change was tested on the environment recorded in [VERIFICATION.md](VERIFICATION.md).
+Repeatability requires equal numeric inputs, frame definitions, configuration, dependency versions and a stable graph during queries. Snapshot iteration follows first-definition order; updating a frame preserves its position. Arithmetic results do not depend on the order in which an otherwise identical valid graph was defined. The guarantee covers repeated queries in the same runtime environment. Bitwise agreement across operating systems/JDKs or library releases is not promised.
 
-## 10. Supported API and migration
+## Supported API and migration
 
 The supported surface includes public types and members under `nsk.nu.ashspace.api` and the existing public `implementation.grid.ChunkLocalIndexer`. No public type, constructor or method has been removed or moved. Public signatures expose Ashcore/Ashgrid types, so upgrading dependencies also needs integration testing. The dependency versions above are the tested baseline, not a claim that every later version is compatible. Ashgrid's `SquareXZChunkScheme` remains owned by Ashgrid.
 
-Version **2.0.0** reserves a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must migrate before adopting a release. Existing `1.0.0` artifacts must not be replaced with this code.
+Version **2.0.0** uses a major version for the stricter behavior: decimal-boundary mapping now uses division; chunk queries use the same int-cell contract as cell/address queries and ignore custom scheme methods; invalid extreme rotations and non-finite transform results fail; unknown-to-itself frame conversion fails. Ordinary standard XZ usage keeps the same source and binary signatures. Consumers relying on the earlier acceptance or rounding behavior must account for these changes when upgrading from 1.0.0.
 
 Frame removal, frozen graphs and the frame-attached mapper are additive APIs in 2.0.0. Common-ancestor composition preserves transform direction and order but can change floating-point rounding relative to the previous root-based calculation. No existing constructor, method or return type was changed. Snapshot mutability is explicit through `isSnapshot()`; snapshot instances reject `define`, `remove` and `removeSubtree`.
 
-Capsule and OBB conversions are additive APIs in `2.0.0`. They require Ashcore `1.2.0`, which owns `OrientedBox`; do not force an older Ashcore onto the runtime classpath. No existing method or conservative mapping behavior changes. The complete Ashspace suite checks this dependency together with Ashgrid `1.3.0`; artifact hashes are recorded in [VERIFICATION.md](VERIFICATION.md).
+Capsule and OBB conversions are additive APIs in `2.0.0`. They require Ashcore `1.2.0`, which owns `OrientedBox`; do not force an older Ashcore onto the runtime classpath. No existing method or conservative mapping behavior changes.
 
-Ashtrace and Ashnav consumers should test the corrected boundary examples, confirm their chunk layout is standard XZ, handle the explicit validation failures and keep a single stable frame configuration for each query. No consumer or lower-layer checkout is changed by this correction. There are no guaranteed serialized formats or cross-release bitwise result streams.
+Ashtrace and Ashnav consumers should test the corrected boundary examples, confirm their chunk layout is standard XZ, handle the explicit validation failures and keep a single stable frame configuration for each query. There are no guaranteed serialized formats or cross-release bitwise result streams.
 
-## 11. Verification and publication
+## Glossary
 
-Run `mvn -B clean verify` with tests enabled. The build compiles with a pinned compiler plugin and `release=21`, fails on Javadoc errors, packages main/sources/Javadoc JARs, checks the required contents and compiles/runs the Java quick start against the packaged JAR and its two production dependencies. Ashspace has no SPI providers to register. CI runs this gate for pushes on all branches (including the confirmed default `main`) and all pull requests, then uploads the three exact artifact filenames without renaming the main JAR.
-
-Frame completion was also checked against the existing Ashtrace and Ashnav test suites in isolated copies, with their Ashspace dependency set to this snapshot. All 43 Ashtrace and 29 Ashnav tests passed; the original consumer sources and POMs were unchanged. These suites include frame-aware tracing and world-to-grid navigation integration. They exercise cooperating library APIs without requiring a separate engine or plugin application. See [VERIFICATION.md](VERIFICATION.md) for the exact source revisions, commands and JAR identity.
-
-The `publish.yml` workflow targets **GitHub Packages**, after verification and a `v<version>` tag/POM match check. Manual runs must select a release tag, and snapshots are rejected. A GitHub Release is the trigger, not evidence that JAR assets were attached to that release; release assets are not currently uploaded by this workflow. The optional `central` profile remains the separate signing/Maven Central publishing route (`mvn -B -Pcentral deploy` with the owner's configured credentials). That is a publication command and must not be used as a verification check.
-
-No publication command was run for these corrections. This snapshot has no release tag or published artifact. GitHub Packages delivery and the manual Central route require release-owner verification before the next release; the local profile alone does not prove publication. Record the destination, version, tag/commit, date and workflow/repository evidence in [VERIFICATION.md](VERIFICATION.md). Never reuse an existing release tag/version for different contents.
+- `frame`: named coordinate system node in a parent-linked graph.
+- `root frame`: top frame with no parent (default `world`).
+- `rigid transform`: rotation + translation, without scale.
+- `parentFromFrame`: transform mapping child-frame coordinates into parent-frame coordinates.
+- `floor mapping`: index conversion where each axis uses `floor` (e.g. `-0.2 -> -1`).
+- `half-open range`: interval `[min, max)` where `max` is excluded.
+- `chunk address`: pair `(chunkIndex, chunkLocal)` for a mapped cell.
+- `space convention`: right-handed coordinates with `Y` as up axis.
+- `capsule`: a segment thickened by a radius, with spherical ends.
+- `oriented box` (OBB): a box described by its center, half side lengths and orientation; its axes can rotate.
+- `axis-aligned box` (AABB): a box whose sides follow the current coordinate axes; enclosing a rotated shape can add space.
 
 ## License
 
-Apache-2.0 Copyright 2025 Mateusz Aftanas
+Apache License 2.0. See [LICENSE](LICENSE).
