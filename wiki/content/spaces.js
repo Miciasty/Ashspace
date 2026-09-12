@@ -221,7 +221,8 @@ public final class TransformCompositionExample {
           title: 'Define a hierarchy',
           html: `<p>Create the root first, then define children beneath existing parents. Every non-root frame has one parent. The graph rejects cycles, so following parent links always leads toward the root.</p>
             <div data-diagram="frame-chain"></div>
-            <p>The figure separates the parent relationships from the direction of coordinate conversion. To convert a tool point toward the root, apply the tool-to-parent transform first and continue up the chain. The inverse route expresses a world point in the tool frame.</p>
+            <p>Drag the 3D scene to orbit the camera, or focus it and use the arrow keys. The sliders change the frame poses. Start with the <strong>seat</strong> readout: moving or rotating the ship changes the point's world coordinates while its seat coordinates stay fixed. Rotate the tool to change the point relative to the seat. Switch to <strong>tool</strong> and its local input stays at <code>(1, 0, 0)</code> through every pose change.</p>
+            <p>The tree highlights the conversion path from <code>tool</code> to the selected frame. For <code>seat</code>, that path is <code>tool → ship → seat</code>: apply the tool-to-parent transform, then the inverse seat-to-parent transform. The shared ship-to-world pose is not part of this relative conversion. Camera movement only changes the view; it never changes coordinate values.</p>
             ${table(['Type or operation', 'Role'], [
               ['<code>new FrameId(value)</code>', 'Create an immutable string ID. Null or blank values raise <code>IllegalArgumentException</code>. Values are not trimmed or case-normalized.'],
               ['<code>FrameGraph3.worldRoot()</code>', 'Create a mutable graph with root ID <code>world</code>.'],
@@ -234,8 +235,9 @@ public final class TransformCompositionExample {
         {
           id: 'resolve-a-chain',
           title: 'Resolve a chain',
-          html: `<p>The ship origin sits at world <code>(10, 0, 0)</code>. Its tool origin sits at ship <code>(0, 5, 0)</code>. The tool point <code>(1, 2, 3)</code> therefore has ship coordinates <code>(1, 7, 3)</code> and world coordinates <code>(11, 7, 3)</code>.</p>
-            ${code(`import nsk.nu.ashcore.api.math.Vector3;
+          html: `<p>This example reproduces the 3D scene after <strong>Reset all</strong>. The ship origin is at world <code>(4, 0, 0)</code>, the seat origin at ship <code>(−2, 0, 0)</code>, and the tool origin at ship <code>(2, 1, 0)</code>. The tool point <code>(1, 0, 0)</code> has ship coordinates <code>(3, 1, 0)</code>, seat coordinates <code>(5, 1, 0)</code>, and world coordinates <code>(7, 1, 0)</code>.</p>
+            ${code(`import nsk.nu.ashcore.api.math.Quaternion;
+import nsk.nu.ashcore.api.math.Vector3;
 import nsk.nu.ashspace.api.frame.Frame3;
 import nsk.nu.ashspace.api.frame.FrameGraph3;
 import nsk.nu.ashspace.api.frame.FrameId;
@@ -246,28 +248,50 @@ public final class FrameChainExample {
         FrameGraph3 frames = FrameGraph3.worldRoot();
         FrameId world = frames.root();
         FrameId ship = new FrameId("ship");
+        FrameId seat = new FrameId("seat");
         FrameId tool = new FrameId("tool");
-        frames.define(ship, world, RigidTransform3.translation(10, 0, 0));
-        frames.define(tool, ship, RigidTransform3.translation(0, 5, 0));
+        frames.define(ship, world, RigidTransform3.translation(4, 0, 0));
+        frames.define(seat, ship, RigidTransform3.translation(-2, 0, 0));
+        frames.define(tool, ship, RigidTransform3.translation(2, 1, 0));
 
-        Vector3 point = new Vector3(1, 2, 3);
+        Vector3 point = new Vector3(1, 0, 0);
         Vector3 inShip = frames.transform(tool, ship).transformPoint(point);
+        Vector3 inSeat = frames.transform(tool, seat).transformPoint(point);
         Vector3 inWorld = frames.rootFrom(tool).transformPoint(point);
         Vector3 restored = frames.transform(world, tool).transformPoint(inWorld);
         Frame3 definition = frames.frame(tool);
 
-        assert inShip.equals(new Vector3(1, 7, 3));
-        assert inWorld.equals(new Vector3(11, 7, 3));
+        assert inShip.equals(new Vector3(3, 1, 0));
+        assert inSeat.equals(new Vector3(5, 1, 0));
+        assert inWorld.equals(new Vector3(7, 1, 0));
         assert restored.equals(point) && definition.parent().equals(ship);
 
         System.out.println("inShip=" + inShip);
+        System.out.println("inSeat=" + inSeat);
         System.out.println("inWorld=" + inWorld);
         System.out.println("restored=" + restored);
         System.out.println("parent=" + definition.parent());
+
+        // Move and rotate the shared ship; seat-relative coordinates stay fixed.
+        frames.define(ship, world, new RigidTransform3(
+                Quaternion.fromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2),
+                new Vector3(8, 0, 0)));
+        Vector3 movedWorld = frames.rootFrom(tool).transformPoint(point);
+        assert movedWorld.distance(new Vector3(8, 1, -3)) < 1e-12;
+        assert frames.transform(tool, seat).transformPoint(point).equals(inSeat);
+
+        // Turning the tool changes the point relative to the seat as well.
+        frames.define(tool, ship, new RigidTransform3(
+                Quaternion.fromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2),
+                new Vector3(2, 1, 0)));
+        assert frames.transform(tool, seat).transformPoint(point)
+                .distance(new Vector3(4, 1, -1)) < 1e-12;
+        assert frames.rootFrom(tool).transformPoint(point)
+                .distance(new Vector3(7, 1, -2)) < 1e-12;
     }
 }`, 'FrameChainExample.java')}
-            <p>The final parent is <code>ship</code>. <code>rootFrom(tool)</code> maps the tool into the graph root. <code>transform(source, target)</code> works in either direction between any two defined frames.</p>
-            ${note('The stored transform points toward the parent', '<p>The hierarchy places a child below its parent, but <code>parentFromFrame</code> converts coordinates from the child into that parent. In the example, the stored tool transform adds <code>(0, 5, 0)</code> to a tool point to express it in ship coordinates.</p>')}`
+            <p>Set <strong>Ship world X</strong> to 8 and <strong>Ship Y rotation</strong> to 90° to reproduce <code>(8, 1, −3)</code> in world space. The seat result stays at <code>(5, 1, 0)</code>. Then set <strong>Tool Y rotation</strong> to 90°: the seat result becomes <code>(4, 1, −1)</code> and the world result becomes <code>(7, 1, −2)</code>, within rounding.</p>
+            ${note('The stored transform points toward the parent', '<p>The hierarchy places a child below its parent, but <code>parentFromFrame</code> converts coordinates from the child into that parent. Initially the tool transform adds <code>(2, 1, 0)</code>. After the update, it first rotates the input by 90° around Y, then adds that same translation.</p>')}`
         },
         {
           id: 'common-ancestor',

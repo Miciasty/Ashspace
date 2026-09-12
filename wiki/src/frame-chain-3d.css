@@ -1,0 +1,44 @@
+@layer components {
+  .frame3d-layout { display: grid; grid-template-columns: minmax(0, 1fr) 150px; background: var(--diagram-plot); border-top: 1px solid var(--border); }
+  .frame3d-viewport { position: relative; min-width: 0; overflow: hidden; }
+  .frame3d-scene { display: block; width: 100%; height: 410px; touch-action: none; user-select: none; cursor: grab; }
+  .frame3d-scene.is-dragging { cursor: grabbing; }
+  .frame3d-scene:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+  .frame3d-scene-key { position: absolute; bottom: 14px; left: 16px; display: flex; gap: 12px; color: var(--muted); font-size: 10px; pointer-events: none; }
+  .frame3d-scene-key span { display: flex; align-items: center; gap: 5px; }
+  .frame3d-scene-key i { width: 6px; height: 6px; border-radius: 50%; }
+  .frame3d-point-key { background: var(--diagram-warm); }
+  .frame3d-axis-x { background: var(--diagram-x); }
+  .frame3d-axis-y { background: var(--diagram-y); }
+  .frame3d-axis-z { background: var(--diagram-z); }
+  .frame3d-hierarchy { padding: 18px 12px 14px; border-left: 1px solid var(--border); background: var(--surface); }
+  .frame3d-kicker { margin: 0 0 8px; color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .04em; }
+  .frame3d-tree { display: block; width: 100%; margin: 0 0 15px; overflow: visible; }
+  .frame3d-tree-edge { stroke: var(--border); stroke-width: 1.4; }
+  .frame3d-tree-edge.active, .frame3d-tree-arrow { stroke: var(--accent); stroke-width: 1.7; fill: none; }
+  .frame3d-tree-node { fill: var(--diagram-plot); stroke: var(--border); }
+  .frame3d-tree-node.active { fill: var(--accent-soft); stroke: var(--accent); }
+  .frame3d-tree-label { font-family: var(--mono); font-size: 12px; fill: var(--text); }
+  .frame3d-tree-role { font-size: 10px; fill: var(--muted); }
+  .frame3d-path, .frame3d-ancestor { display: block; margin-bottom: 15px; font-family: var(--mono); font-size: 11px; color: var(--accent); line-height: 1.7; }
+  .frame3d-edge-help { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+  .frame3d-readout { display: grid; grid-template-columns: 1.3fr 1fr; align-items: start; gap: 18px; }
+  .frame3d-result { display: block; margin: 7px 0; color: var(--accent); font-family: var(--mono); font-size: 17px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .frame3d .frame3d-call { display: block; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+  .frame3d-world { display: block; margin: 9px 0; font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  @media (max-width: 850px) {
+    .frame3d-layout { grid-template-columns: minmax(0, 1fr); }
+    .frame3d-hierarchy { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 22px; border-left: 0; border-top: 1px solid var(--border); padding: 15px 18px; }
+    .frame3d-tree { width: 110px; margin: 0; }
+    .frame3d-path-info { padding-top: 3px; }
+  }
+  @media (max-width: 620px) {
+    .frame3d-scene { height: 320px; }
+    .frame3d-readout { grid-template-columns: 1fr; gap: 15px; }
+  }
+  @media print {
+    .frame3d-layout { grid-template-columns: minmax(0, 1fr) 150px; }
+    .frame3d-hierarchy { display: block; border-left: 1px solid var(--border); border-top: 0; }
+    .frame3d-scene { height: 350px; }
+  }
+}

@@ -153,25 +153,7 @@
   }
 
   function frameChain(host) {
-    const defaults = { offset: 10, angle: 0 }, state = { ...defaults };
-    const f = shell(host, { title: 'Convert between two frames on one ship', badge: 'tool → seat',
-      stats: [['seat', 'Point in seat coordinates'], ['world', 'The same point in world coordinates'], ['path', 'Composed path'], ['ancestor', 'Nearest common ancestor']],
-      controls: (id) => range(id, 'offset', 'Ship world X', 0, 100, 1, 10) + range(id, 'angle', 'Tool Y rotation', -90, 90, 1, 0, '°'),
-      caption: 'The tool point is (1, 0, 0). The seat origin is (−2, 0, 0) in ship space, and the tool origin is (2, 1, 0). frames.transform(tool, seat) composes tool → ship and the inverse of seat → ship. Moving the shared ship changes world coordinates while preserving the relative result. Only edges below the nearest common ancestor are composed.' });
-    function node(x, y, name, detail, active) {
-      add(f.svg, 'rect', { x: x - 96, y: y - 28, width: 192, height: 58, rx: 8, class: active ? 'diagram-node-active' : 'diagram-node' });
-      label(f.svg, x, y - 4, name, 'diagram-strong', 'middle'); label(f.svg, x, y + 17, detail, 'diagram-muted-label', 'middle');
-    }
-    function draw() {
-      const inShip = rotate({ x: 1, y: 0, z: 0 }, state.angle, { x: 2, y: 1, z: 0 }), inSeat = rotate(inShip, 0, { x: 2, y: 0, z: 0 }), inWorld = rotate(inShip, 0, { x: state.offset, y: 0, z: 0 });
-      begin(f.svg, f.id, 'Frame graph and shared ancestor', `world is parent of ship; ship is parent of seat and tool. Ship world X is ${state.offset}. Tool Y rotation is ${state.angle} degrees. Tool point (1,0,0) maps to seat ${tuple(inSeat)} and world ${tuple(inWorld)}.`);
-      line(f.svg, { x: 360, y: 74 }, { x: 360, y: 151 }, 'diagram-dashed'); label(f.svg, 375, 110, `X = ${state.offset}`, 'diagram-muted-label'); label(f.svg, 375, 128, 'shared world offset', 'diagram-muted-label');
-      arrow(f.svg, { x: 526, y: 260 }, { x: 417, y: 205 }, f.id, 'accent', { 'stroke-width': 3 }); arrow(f.svg, { x: 305, y: 205 }, { x: 194, y: 260 }, f.id, 'accent', { 'stroke-width': 3 });
-      label(f.svg, 497, 226, 'to parent'); label(f.svg, 184, 226, 'inverse');
-      node(360, 45, 'world', 'root frame', false); node(360, 177, 'ship', 'nearest common ancestor', true); node(156, 294, 'seat', 'target frame', true); node(564, 294, 'tool', 'source frame', true);
-      f.stat('seat', tuple(inSeat)); f.stat('world', tuple(inWorld)); f.stat('path', 'tool → ship → seat'); f.stat('ancestor', 'ship'); f.value('offset', `${state.offset} blocks`); f.value('angle', `${state.angle}°`);
-    }
-    return controls(f, state, defaults, draw);
+    return window.WikiFrameChain3D.mount(host);
   }
 
   function gridFigure(host) {

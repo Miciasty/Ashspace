@@ -1,6 +1,6 @@
 # Ashspace WIKI
 
-English documentation for Ashspace 2.0.0, based on the shared Minecraft plugin WIKI template and its documentation language rules. The topbar retains Documentation, Examples, and Changelog. The site uses local assets, local search, hash routes, dark/light themes, copyable syntax-highlighted examples, and interactive SVG figures.
+English documentation for Ashspace 2.0.0, based on the shared Minecraft plugin WIKI template and its documentation language rules. The topbar matches Ashcore: Documentation, Examples, and API reference, with a Maven Central artifact link. The site uses local assets, local search, hash routes, dark/light themes, copyable syntax-highlighted examples, and interactive SVG figures, including an orbitable 3D frame hierarchy.
 
 ## Preview
 
@@ -20,12 +20,14 @@ The generated `assets/styles.css` is committed. You can also open `index.html` d
 
 Edit `content/site.js` for navigation and product metadata. `content/pages.js` defines shared components; the other content scripts contain the articles. `assets/diagrams.js` and `src/diagrams.css` implement the figures. Edit `src/*.css`, then rebuild; do not edit generated CSS.
 
+The frame-chain scene lives in `assets/frame-chain-3d.js` and `src/frame-chain-3d.css`. It projects shaded cuboid faces through a perspective camera into SVG, with no external renderer or downloaded assets. It redraws only after a pose, camera, size or theme change. Diagram cleanup removes pointer/keyboard listeners, observers and pending animation frames. Drag or use arrow keys to orbit, scroll or use the zoom buttons to zoom, and use Home / Reset view to restore the camera. Reset all also restores frame poses and the selected readout.
+
 ```powershell
 npm run build
 npm run check:examples
 ```
 
-The build checks page and section links, navigation, relative assets, version metadata and removed demonstration content, then writes browser files to `wiki/_site`. The example check requires JDK 21+ (`JAVA_HOME` or PATH) and the POM's Ashcore/Ashgrid dependencies in the default Maven repository. For a custom Maven repository, set `MAVEN_REPO_LOCAL`, or run the following from the repository root first:
+The build checks page and section links, navigation, relative assets, version metadata, removed demonstration content, and the 3D model's reference poses and relative-coordinate invariants, then writes browser files to `wiki/_site`. The example check requires JDK 21+ (`JAVA_HOME` or PATH) and the POM's Ashcore/Ashgrid dependencies in the default Maven repository. For a custom Maven repository, set `MAVEN_REPO_LOCAL`, or run the following from the repository root first:
 
 ```powershell
 mvn -B -ntp dependency:build-classpath -DincludeScope=compile -Dmdep.outputFile=target/wiki-classpath.txt
@@ -43,7 +45,7 @@ The build follows [GitHub's custom workflow documentation](https://docs.github.c
 
 ## Source basis
 
-Article facts were checked against the local 2.0.0 `pom.xml`, `README.md`, `src/main/java`, and tests. `getting-started.js` documents setup; `spaces.js` covers frame/transform types; `grids.js` covers geometry and grid mapping; `integration.js` covers state, API contracts and diagnostics. Changelog records checked-in behavior without inventing release dates. There is no Bukkit adapter or server plugin API in this library.
+Article facts were checked against the local 2.0.0 `pom.xml`, `README.md`, `src/main/java`, and tests. `getting-started.js` documents setup; `spaces.js` covers frame/transform types; `grids.js` covers geometry and grid mapping; `integration.js` covers state, API contracts and diagnostics. Migration records checked-in behavior without inventing release dates. There is no Bukkit adapter or server plugin API in this library.
 
 Figures illustrate Java's documented math with bounded JavaScript examples. They do not run the Java library. All values have nearby textual explanations; controls support keyboard input and reset. Keep mathematical assertions in the copied Java examples authoritative when changing illustrations.
 
