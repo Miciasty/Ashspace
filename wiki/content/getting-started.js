@@ -2,36 +2,31 @@
   const {code, table, note, cards} = window.WIKI_UI;
   window.WIKI_PAGES.push(
     {
-      id: 'overview', category: 'Getting started', title: 'Ashspace', kind: 'concept',
-      description: 'Coordinate frames, rigid transforms, and grid mapping for your Minecraft plugin.',
-      intro: '<p>A tool stays in the same place on a ship while the ship moves through the world. Ashspace converts that local position into world coordinates, another tool’s frame, or a voxel cell. You supply the pose; the library supplies the coordinate math.</p>',
+      id: 'overview', category: 'Getting started', title: 'Ashspace documentation', navTitle: 'Overview', kind: 'guide', readingTime: 3,
+      description: 'Coordinate frames, rigid transforms, and grid mapping for your Java project.',
+      intro: '<p>Ashspace is a Java library for coordinate frames, rigid transforms, geometry conversion, and world/local-to-grid mapping. Use it inside a Minecraft plugin or any Java application to locate a point on a moving ship in world space, another tool’s frame, or a voxel grid.</p>',
       sections: [
-        {id: 'from-tool-to-cell', title: 'From a tool to a cell', html: `
-          <div class="my-6 grid grid-cols-3 gap-3 max-[680px]:grid-cols-1">
-            <div class="rounded-md border border-line bg-surface p-4"><span class="font-mono text-[11px] text-accent">01 / LOCAL</span><h3>Tool position</h3><p>A point relative to the ship’s origin and axes.</p></div>
-            <div class="rounded-md border border-line bg-surface p-4"><span class="font-mono text-[11px] text-accent">02 / TRANSFORM</span><h3>World position</h3><p>Rotate the point, then add the ship’s translation.</p></div>
-            <div class="rounded-md border border-line bg-surface p-4"><span class="font-mono text-[11px] text-accent">03 / GRID</span><h3>Cell address</h3><p>Apply floor mapping, then split the cell into chunk and local indices.</p></div>
-          </div>
-          <p>Use a world-aligned grid for terrain. Use a frame-attached grid for cells that move with the ship. Direct frame-to-frame conversion also lets two tools share coordinates without an intermediate world point.</p>
-          ${cards([{id:'quick-start',title:'Build your first conversion',text:'Define a ship frame and locate one of its points in a grid.'},{id:'coordinate-spaces',title:'Explore coordinate spaces',text:'Move and rotate a frame. Compare a point with a direction.'}])}`},
-        {id: 'choose-an-api', title: 'Choose an API', html: table(['You need to…','Use','Result'],[
-          ['Name and connect coordinate frames','<a href="#/frame-chains"><code>FrameGraph3</code></a>','A parent chain with relative poses.'],
-          ['Rotate and translate a value','<a href="#/transforms"><code>RigidTransform3</code></a>','A point or vector in a new coordinate system.'],
-          ['Convert between named frames','<a href="#/coordinate-spaces"><code>SpaceConverter3</code></a>','Points, directions, rays, and shapes in the target frame.'],
-          ['Move geometry with a known transform','<a href="#/geometry"><code>GeometryTransforms3</code></a>','Transformed shapes or an enclosing AABB.'],
-          ['Index a world-aligned grid','<a href="#/grid-mapping"><code>GridSpaceMapper3</code></a>','Cell, chunk, chunk-local address, or half-open range.'],
-          ['Attach a grid to a moving frame','<a href="#/frame-grids"><code>FrameGridSpaceMapper3</code></a>','The same index operations in that frame’s grid.'],
-          ['Keep one pose for a complete query','<a href="#/spaces-and-snapshots"><code>snapshot()</code></a>','Frozen frame definitions for later reads.']
+        {id: 'start-building', title: 'Start with a working example', html: `<p>This WIKI documents <strong>Ashspace 2.0.0</strong>. You need <strong>Java 21 or newer</strong>. The library uses Ashcore 1.2.0 and Ashgrid 1.3.0 as transitive dependencies.</p><div class="link-cards my-[22px] grid grid-cols-2 gap-[13px] max-[680px]:grid-cols-1"><a class="link-card block rounded-[6px] border border-line p-[18px] [background:linear-gradient(145deg,var(--surface),transparent)] transition-[border-color] duration-150 hover:border-accent" href="#/installation"><span>01 · SETUP <b>↗</b></span><h3>Add Ashspace</h3><p>Add the Maven or Gradle dependency and package it with your application.</p></a><a class="link-card block rounded-[6px] border border-line p-[18px] [background:linear-gradient(145deg,var(--surface),transparent)] transition-[border-color] duration-150 hover:border-accent" href="#/quick-start"><span>02 · FIRST RESULT <b>↗</b></span><h3>Convert a ship point</h3><p>Define a ship frame and locate one of its points in a world-aligned grid.</p></a><a class="link-card block rounded-[6px] border border-line p-[18px] [background:linear-gradient(145deg,var(--surface),transparent)] transition-[border-color] duration-150 hover:border-accent" href="#/coordinate-spaces"><span>03 · COORDINATES <b>↗</b></span><h3>Explore coordinate spaces</h3><p>Move and rotate a frame, then compare a point with a direction.</p></a><a class="link-card block rounded-[6px] border border-line p-[18px] [background:linear-gradient(145deg,var(--surface),transparent)] transition-[border-color] duration-150 hover:border-accent" href="#/api-reference"><span>04 · REFERENCE <b>↗</b></span><h3>Find an API type</h3><p>Browse the public types by package and follow their contracts.</p></a></div>`},
+        {id: 'choose-a-tool', title: 'Choose a tool for the job', html: table(['Your task','Start here','Result'],[
+          ['Name and connect coordinate frames','<a href="#/frame-chains">Frame chains</a>','A parent chain with relative poses.'],
+          ['Rotate and translate a value','<a href="#/transforms">Rigid transforms</a>','A point or vector in a new coordinate system.'],
+          ['Convert between named frames','<a href="#/coordinate-spaces">Coordinate spaces</a>','Points, directions, rays, and shapes in the target frame.'],
+          ['Move geometry with a known transform','<a href="#/geometry">Geometry conversion</a>','Transformed shapes or an enclosing AABB.'],
+          ['Index a world-aligned grid','<a href="#/grid-mapping">Cells and chunks</a>','A cell, chunk, or chunk-local address.'],
+          ['Attach a grid to a moving frame','<a href="#/frame-grids">Frame-attached grids</a>','Cell indices in a grid that moves and rotates with its frame.'],
+          ['Keep one pose for a complete query','<a href="#/spaces-and-snapshots">State and snapshots</a>','Frozen frame definitions for later reads.']
         ])},
-        {id: 'library-boundaries', title: 'Where Ashspace fits', html: `<p>Ashspace is a Java 21 library packaged with your application or plugin. It has no server entry point, commands, permissions, or configuration file. A frame named <code>world</code> is the graph’s root, not a Bukkit world reference.</p>
-          ${table(['Project','Responsibility'],[
-            ['<a href="https://github.com/Miciasty/Ashcore">Ashcore 1.2.0</a>','Vectors, quaternions, shapes, and collision math used by the public API.'],
-            ['<strong>Ashspace 2.0.0</strong>','Frame relationships, rigid conversion, and coordinates-to-indices mapping.'],
-            ['<a href="https://github.com/Miciasty/Ashgrid">Ashgrid 1.3.0</a>','Grid indices and storage/traversal APIs.'],
-            ['Your plugin','World selection, pose updates, synchronization, persistence, and gameplay.']
-          ])}
-          <p>Ashspace does not simulate motion, trace Minecraft blocks, render shapes, or search for paths. All transforms preserve scale. Coordinates use a right-handed system with Y up.</p>`},
-        {id: 'read-the-wiki', title: 'Read the WIKI', html: `<p>Start with installation and the runnable example. The spatial model pages explain the geometry; the grid pages explain indexing and boundary rules. Each interactive figure illustrates the documented equations in your browser. It does not run Java or a Minecraft server.</p>${cards([{id:'grid-mapping',title:'Understand negative coordinates',text:'See why −0.2 maps to cell −1, and why chunk-local X becomes 15.'},{id:'spaces-and-snapshots',title:'Keep a query consistent',text:'Compare a moving live graph with a frozen pose.'}])}<p>This WIKI describes the current <code>2.0.0</code> checkout. See <a href="#/changelog">Changelog</a> for migration behavior and <a href="#/api-reference">API reference</a> for exact type names.</p>`}
+        {id: 'library-boundary', title: 'Where Ashspace fits', html: '<p>Your application supplies coordinates, units, frame poses, and grid configuration. Ashspace computes values from those inputs. It does not read a Minecraft world or register server commands, permissions, listeners, or configuration files. A frame named <code>world</code> identifies the graph’s root; it carries no Minecraft world reference.</p><p>Converting a ray or box changes its coordinate representation. It does not test a hit, move an entity, or simulate motion. A cell address identifies a location in a grid; it does not contain voxel data. Your application owns pose updates, synchronization, persistence, and gameplay.</p><p>Ashspace uses Ashcore vectors, quaternions, and geometry types in its public API. Ashcore supplies collision queries for those shapes. Ashgrid supplies grid indices and storage/traversal APIs. Ashspace connects coordinate frames to those grid indices; rendering, scene traversal, and pathfinding belong to other systems.</p>'},
+        {id: 'terms', title: 'Terms used in this WIKI', html: table(['Term','Meaning'],[
+          ['Position unit','The unit chosen by your application. Use blocks when supplying Minecraft positions, and use the same unit for translations, geometry, and cell size.'],
+          ['Frame','A named origin and orientation. Each non-root frame stores its pose relative to one parent. See <a href="#/frame-chains">frame chains</a>.'],
+          ['World / local space','Coordinates in the graph’s root / coordinates in a chosen frame. The coordinate system is right-handed with Y up.'],
+          ['Rigid transform','Rotation followed by translation, with no scale or shear. A point receives both; a vector or direction receives rotation only.'],
+          ['Chunk address','A chunk index in XZ paired with chunk-local XYZ indices. Local X and Z use floor modulo; local Y remains the grid cell Y.'],
+          ['Half-open range','An interval <code>[min, max)</code> that includes its minimum and excludes its maximum. See <a href="#/cell-ranges">cell and chunk ranges</a>.'],
+          ['Snapshot','A frozen copy of frame definitions. Later source updates do not change it; it does not copy grid storage or Minecraft state.']
+        ])},
+        {id: 'version-and-source', title: 'Version and source', html: '<p>The examples and contracts were checked against the current 2.0.0 source. Maven coordinates use <code>dev.nasaka.blackframe:ashspace</code>; Java imports use <code>nsk.nu.ashspace</code>.</p><p>Read <a href="#/changelog">migration notes</a> before updating an existing integration. Browse the <a href="https://github.com/Miciasty/Ashspace">source repository</a> or the <a href="https://central.sonatype.com/artifact/dev.nasaka.blackframe/ashspace/2.0.0">Maven Central artifact</a> for this version. Ashspace is distributed under the <a href="https://github.com/Miciasty/Ashspace/blob/master/LICENSE">Apache License 2.0</a>.</p>'}
       ]
     },
     {

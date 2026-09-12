@@ -50,22 +50,23 @@
     for (let x = minX; x <= maxX; x += step) line(g, project(x, minZ), project(x, maxZ), '');
     for (let z = minZ; z <= maxZ; z += step) line(g, project(minX, z), project(maxX, z), '');
   }
-  const buttonClass = 'diagram-button cursor-pointer rounded-md border border-line bg-transparent px-3 py-2 text-xs text-muted hover:text-foreground';
+  // Keep control states in the same utility layer as their default styles.
+  const buttonClass = 'cursor-pointer appearance-none rounded-md border border-line bg-transparent px-3 py-[7px] text-[11px] leading-[1.4] text-muted hover:bg-[var(--diagram-muted-surface)] hover:text-foreground print:hidden';
+  const segmentClass = 'cursor-pointer rounded border-0 bg-transparent px-3 py-1.5 text-xs font-[550] leading-[1.4] text-muted hover:text-foreground aria-pressed:bg-[var(--diagram-muted-surface)] aria-pressed:text-foreground aria-pressed:shadow-[0_1px_2px_#00000012]';
   function range(id, key, title, min, max, step, value, suffix = '') {
-    return `<div class="min-w-0"><div class="mb-2 flex items-baseline justify-between gap-2"><label class="text-xs" for="${id}-${key}">${title}</label><output class="diagram-control-value font-mono text-[11px] text-muted" for="${id}-${key}" data-value="${key}"></output></div><input class="diagram-slider block w-full cursor-pointer accent-accent" id="${id}-${key}" data-control="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="mt-1 flex justify-between text-[10px] text-muted" aria-hidden="true"><span>${min}${suffix}</span><span>${max}${suffix}</span></div></div>`;
+    return `<div class="diagram-control min-w-0"><div class="diagram-control-label mb-[9px] flex items-baseline justify-between gap-2 max-[620px]:flex-col max-[620px]:items-start max-[620px]:gap-1"><label class="text-xs leading-normal text-foreground" for="${id}-${key}">${title}</label><output class="diagram-control-value whitespace-nowrap font-mono text-[11px] text-muted tabular-nums" for="${id}-${key}" data-value="${key}"></output></div><input class="m-0 block h-[18px] w-full cursor-pointer p-0 accent-accent" id="${id}-${key}" data-control="${key}" type="range" min="${min}" max="${max}" step="${step}" value="${value}"><div class="diagram-range-labels mt-[5px] flex justify-between text-[10px] leading-[1.2] text-muted" aria-hidden="true"><span>${min}${suffix}</span><span>${max}${suffix}</span></div></div>`;
   }
   function segments(key, title, options, initial) {
-    return `<div class="diagram-segmented inline-flex flex-wrap gap-1 rounded-lg border border-line bg-page p-1" role="group" aria-label="${title}">${options.map(([value, text]) => `<button type="button" class="${buttonClass}" data-choice="${key}" data-option="${value}" aria-pressed="${value === initial}">${text}</button>`).join('')}</div>`;
+    return `<div class="diagram-segmented inline-flex flex-wrap items-center rounded-[7px] border border-line bg-page p-[3px]" role="group" aria-label="${title}">${options.map(([value, text]) => `<button type="button" class="${segmentClass}" data-choice="${key}" data-option="${value}" aria-pressed="${value === initial}">${text}</button>`).join('')}</div>`;
   }
   function shell(host, config) {
     const id = `ashspace-diagram-${++sequence}`;
-    host.innerHTML = `<figure class="diagram-component mx-0 my-[26px] overflow-hidden rounded-xl border border-line bg-surface font-sans text-[13px] leading-normal text-foreground print:break-inside-avoid">
-      <div class="diagram-toolbar flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5 max-[620px]:px-3.5"><span class="text-xs font-semibold">${config.title}</span><span class="text-[11px] text-muted">${config.badge}</span></div>
-      ${config.choices ? `<div class="flex flex-wrap gap-2 px-5 pt-4 max-[620px]:px-3.5">${config.choices}</div>` : ''}
+    host.innerHTML = `<figure class="diagram-component mx-0 my-[26px] overflow-hidden rounded-xl border border-line bg-surface font-sans text-[13px] leading-normal text-foreground print:break-inside-avoid" aria-label="${config.title}">
+      <div class="diagram-toolbar flex items-center justify-between gap-3 border-b border-line px-[18px] py-3.5 max-[620px]:flex-wrap max-[620px]:p-3">${config.choices || `<span class="text-xs font-semibold">${config.title}</span>`}<span class="diagram-plane-label whitespace-nowrap text-[11px] text-muted">${config.badge}</span></div>
       <div class="diagram-scene-wrap"><svg class="diagram-scene block h-auto w-full" viewBox="0 0 720 ${config.height || 360}" role="img"></svg></div>
       <div class="diagram-readout grid grid-cols-2 gap-x-5 gap-y-3 border-y border-line px-5 py-4 max-[620px]:grid-cols-1 max-[620px]:px-3.5" aria-live="polite" aria-atomic="true">${config.stats.map(([key, name]) => `<div class="min-w-0"><span class="block text-[11px] text-muted">${name}</span><output class="diagram-output mt-1 block font-mono text-xs" data-stat="${key}"></output></div>`).join('')}</div>
-      <div class="diagram-controls grid grid-cols-2 items-end gap-x-6 gap-y-4 px-5 pt-5 pb-4 max-[620px]:px-3.5 print:hidden">${config.controls(id)}<div class="col-span-full flex flex-wrap gap-2">${config.action || ''}<button type="button" class="${buttonClass}" data-reset>Reset</button></div></div>
-      <figcaption class="diagram-caption px-5 pb-5 text-[11px] leading-[1.8] text-muted max-[620px]:px-3.5">${config.caption}</figcaption></figure>`;
+      <div class="diagram-controls grid grid-cols-[minmax(0,1fr)_auto] items-center gap-[26px] px-5 pt-[19px] pb-[15px] max-[620px]:grid-cols-1 max-[620px]:gap-[18px] max-[620px]:px-3.5 max-[620px]:pt-[17px] max-[620px]:pb-3.5 print:hidden"><div class="grid ${config.singleControl ? 'grid-cols-1' : 'grid-cols-2'} items-center gap-[26px] max-[620px]:gap-[18px]">${config.controls(id)}</div><div class="flex flex-wrap items-center gap-2 max-[620px]:justify-self-start">${config.action || ''}<button type="button" class="diagram-reset ${buttonClass}" data-reset>Reset</button></div></div>
+      <figcaption class="diagram-caption px-5 pt-px pb-[18px] text-[11px] leading-[1.7] text-muted max-[620px]:px-3.5 max-[620px]:pt-0 max-[620px]:pb-4">${config.caption}</figcaption></figure>`;
     const cleanups = [];
     return { id, svg: host.querySelector('svg'),
       on(selector, event, fn) { host.querySelectorAll(selector).forEach((node) => { node.addEventListener(event, fn); cleanups.push(() => node.removeEventListener(event, fn)); }); },
@@ -235,7 +236,8 @@
     const defaults = { live: 4, frozen: 0 }, state = { ...defaults };
     const f = shell(host, { title: 'A snapshot keeps the frame definitions it copied', badge: 'live graph / frozen graph', height: 320,
       stats: [['live', 'Converter using the live graph'], ['frozen', 'Converter using the snapshot'], ['at', 'Snapshot captured at ship X'], ['effect', 'Effect of moving the ship']],
-      controls: (id) => range(id, 'live', 'Live ship world X', 0, 8, 0.1, 4), action: `<button type="button" class="${buttonClass} diagram-action" data-capture>Capture new snapshot</button>`,
+      singleControl: true,
+      controls: (id) => range(id, 'live', 'Live ship world X', 0, 8, 0.1, 4), action: `<button type="button" class="${buttonClass}" data-capture>Capture new snapshot</button>`,
       caption: 'Both converters transform ship-local point (1, 0, 0) into world space. The live converter observes later frame definitions. A snapshot copies the current definitions and rejects mutations; moving the source graph does not update it. “Capture new snapshot” illustrates taking a new snapshot and using it for the frozen converter. A snapshot does not precompute world transforms.' });
     function draw() {
       begin(f.svg, f.id, 'Live graph and snapshot comparison', `Live ship X is ${state.live}, snapshot ship X is ${state.frozen}. Local point (1,0,0) maps to live world X ${state.live + 1} and snapshot world X ${state.frozen + 1}.`);
@@ -258,6 +260,7 @@
     const f = shell(host, { title: 'A rotated shape and its enclosing AABB', badge: 'XZ footprint · Y rotation',
       choices: segments('view', 'Visible box geometry', [['both', 'Compare'], ['obb', 'Oriented box'], ['aabb', 'Enclosing AABB']], 'both'),
       stats: [['obb', 'Oriented box XZ area'], ['aabb', 'Enclosing AABB XZ area'], ['bounds', 'Enclosing X and Z bounds'], ['ratio', 'Envelope / shape area']],
+      singleControl: true,
       controls: (id) => range(id, 'angle', 'Y rotation', 0, 90, 1, 35, '°'),
       caption: 'The source AABB has side lengths (4, 1, 2), centered at the origin. orientedBox preserves the rotated box within coordinate rounding. axisAlignedBox transforms all eight corners, then encloses their coordinate minima and maxima. The amber area may contain empty space around the blue shape. A cell range derived from this envelope is conservative, so further shape checks may be needed.' });
     function draw() {

@@ -14,14 +14,7 @@
   }
   .diagram-component button:focus-visible,
   .diagram-component input:focus-visible { @apply outline-2 outline-offset-4 outline-accent; }
-  .diagram-button { min-height: 36px; }
-  .diagram-button:hover { background: var(--diagram-muted-surface); }
-  .diagram-segmented .diagram-button { border-color: transparent; }
-  .diagram-segmented .diagram-button[aria-pressed="true"] { background: var(--diagram-muted-surface); color: var(--text); }
-  .diagram-action { color: var(--accent); }
-  .diagram-slider { min-height: 24px; margin: 0; }
   .diagram-output { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; line-height: 1.7; }
-  .diagram-control-value { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .diagram-scene-wrap { overflow: auto; background: var(--diagram-plot); }
   .diagram-scene { background: var(--diagram-plot); }
   .diagram-scene text { font-family: inherit; }
@@ -61,7 +54,6 @@
   @media (max-width: 620px) {
     /* Keep labels legible; the figure scrolls without widening the page. */
     .diagram-scene { min-width: 520px; }
-    .diagram-controls { column-gap: 16px; }
   }
   @media print {
     .diagram-scene { min-width: 0; }
